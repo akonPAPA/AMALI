@@ -1,0 +1,48 @@
+# Global tool-permission policy v0.
+# Default-deny, audit-mandatory, network-denied, raw-secrets-forbidden.
+# The dangerous_operation_patterns set is platform-neutral and deliberately
+# covers Windows/PowerShell forms because the owner develops on Windows.
+policy_id: tool_permission_policy_v0
+version: 0.1.0
+default_decision: deny
+max_grant_ttl_seconds: 300
+risk_thresholds:
+  allow_max: L1
+  readonly_max: L1
+  sandbox_max: L2
+  review_max: L4
+  deny_min: L5
+high_risk_requires_review: true
+secret_requires_handle_only: true
+network_default_deny: true
+forbid_unrestricted_network: true
+forbid_raw_secret_to_model: true
+require_audit_event: true
+owner_approval_required_from_risk: L3
+denied_operations:
+  - execute_shell
+  - raw_secret_read
+  - unrestricted_network
+  - delete_workspace
+  - write_outside_workspace
+  - upload_data
+dangerous_operation_patterns:
+  - rm -rf
+  - format
+  - shutdown
+  - reboot
+  - curl
+  - wget
+  - nc
+  - netcat
+  - ssh
+  - scp
+  - powershell -encodedcommand
+  - invoke-webrequest
+  - invoke-expression
+  - chmod 777
+  - sudo
+  - private_key
+  - access_token
+  - refresh_token
+  - bearer
