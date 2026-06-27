@@ -1,0 +1,688 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "amali_architecture_components",
+        "label": "AMALI Architecture Components",
+        "nodes": [
+          "readme_amali",
+          "readme_controlled_self_improvement",
+          "readme_moe_routing",
+          "readme_secure_memory",
+          "readme_evaluation",
+          "readme_owner_governed_deployment"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "README.md"
+      },
+      {
+        "id": "repo_agent_operating_discipline",
+        "label": "Repo Agent Operating Discipline",
+        "nodes": [
+          "agents_intent_layer",
+          "agents_evidence_layer",
+          "agents_exploration_layer",
+          "agents_discipline_layer",
+          "agents_security_contract_layer"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "AGENTS.md"
+      },
+      {
+        "id": "safe_pr_based_development",
+        "label": "Safe PR-Based Development",
+        "nodes": [
+          "agents_github_workflow_rules",
+          "agents_branch_and_pr_rules",
+          "agents_ci_security_run_discipline",
+          "agents_prompt_change_rules",
+          "agents_definition_of_done"
+        ],
+        "relation": "participate_in",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "AGENTS.md"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "AMALI",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_amali",
+      "community": 0,
+      "norm_label": "amali"
+    },
+    {
+      "label": "Controlled Self-Improvement",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_controlled_self_improvement",
+      "community": 0,
+      "norm_label": "controlled self-improvement"
+    },
+    {
+      "label": "MoE Routing",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_moe_routing",
+      "community": 0,
+      "norm_label": "moe routing"
+    },
+    {
+      "label": "Secure Memory",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_secure_memory",
+      "community": 0,
+      "norm_label": "secure memory"
+    },
+    {
+      "label": "Evaluation",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_evaluation",
+      "community": 0,
+      "norm_label": "evaluation"
+    },
+    {
+      "label": "Owner-Governed Deployment",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_owner_governed_deployment",
+      "community": 0,
+      "norm_label": "owner-governed deployment"
+    },
+    {
+      "label": "Foundation Before Training",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "The repository starts with governance, security, evaluation, and local MVP infrastructure before model training or neural MoE research.",
+      "id": "readme_foundation_before_training",
+      "community": 0,
+      "norm_label": "foundation before training"
+    },
+    {
+      "label": "AMALI Addendum",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_amali_addendum",
+      "community": 4,
+      "norm_label": "amali addendum"
+    },
+    {
+      "label": "Repo-Agent Discipline",
+      "file_type": "concept",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_repo_agent_discipline",
+      "community": 4,
+      "norm_label": "repo-agent discipline"
+    },
+    {
+      "label": "Layered Agent Discipline",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Coding, DevOps, and security agents must operate through defined layers before changing code or reporting completion.",
+      "id": "agents_layered_agent_discipline",
+      "community": 2,
+      "norm_label": "layered agent discipline"
+    },
+    {
+      "label": "Intent Layer",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_intent_layer",
+      "community": 2,
+      "norm_label": "intent layer"
+    },
+    {
+      "label": "Evidence Layer",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_evidence_layer",
+      "community": 2,
+      "norm_label": "evidence layer"
+    },
+    {
+      "label": "Exploration Layer",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_exploration_layer",
+      "community": 2,
+      "norm_label": "exploration layer"
+    },
+    {
+      "label": "Discipline Layer",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_discipline_layer",
+      "community": 2,
+      "norm_label": "discipline layer"
+    },
+    {
+      "label": "Security Contract Layer",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_security_contract_layer",
+      "community": 1,
+      "norm_label": "security contract layer"
+    },
+    {
+      "label": "GitHub Workflow Rules",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_github_workflow_rules",
+      "community": 1,
+      "norm_label": "github workflow rules"
+    },
+    {
+      "label": "Branch and PR Rules",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_branch_and_pr_rules",
+      "community": 1,
+      "norm_label": "branch and pr rules"
+    },
+    {
+      "label": "CI / Security Run Discipline",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_ci_security_run_discipline",
+      "community": 5,
+      "norm_label": "ci / security run discipline"
+    },
+    {
+      "label": "Prompt Change Rules",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_prompt_change_rules",
+      "community": 1,
+      "norm_label": "prompt change rules"
+    },
+    {
+      "label": "AMALI-Specific Additions",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_amali_specific_additions",
+      "community": 3,
+      "norm_label": "amali-specific additions"
+    },
+    {
+      "label": "Definition of Done",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_definition_of_done",
+      "community": 5,
+      "norm_label": "definition of done"
+    },
+    {
+      "label": "Least Privilege",
+      "file_type": "concept",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_least_privilege",
+      "community": 1,
+      "norm_label": "least privilege"
+    },
+    {
+      "label": "PR-Based Workflow",
+      "file_type": "concept",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_pr_based_workflow",
+      "community": 1,
+      "norm_label": "pr-based workflow"
+    },
+    {
+      "label": "Evidence Labels",
+      "file_type": "concept",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_evidence_labels",
+      "community": 3,
+      "norm_label": "evidence labels"
+    },
+    {
+      "label": "Approval-Gated Self-Improvement",
+      "file_type": "concept",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_approval_gated_self_improvement",
+      "community": 3,
+      "norm_label": "approval-gated self-improvement"
+    },
+    {
+      "label": "Eval Foundation Before Training",
+      "file_type": "rationale",
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "No training or fine-tuning should start before the evaluation foundation exists.",
+      "id": "agents_eval_foundation_before_training",
+      "community": 3,
+      "norm_label": "eval foundation before training"
+    }
+  ],
+  "links": [
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_amali_addendum",
+      "target": "readme_amali"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_amali",
+      "target": "readme_controlled_self_improvement"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_amali",
+      "target": "readme_evaluation"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_amali",
+      "target": "readme_foundation_before_training"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_amali",
+      "target": "readme_moe_routing"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_amali",
+      "target": "readme_owner_governed_deployment"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_amali",
+      "target": "readme_secure_memory"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_foundation_before_training",
+      "target": "readme_evaluation"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md;AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_eval_foundation_before_training",
+      "target": "readme_foundation_before_training"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_amali_addendum",
+      "target": "agents_repo_agent_discipline"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_layered_agent_discipline",
+      "target": "agents_discipline_layer"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_layered_agent_discipline",
+      "target": "agents_evidence_layer"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_layered_agent_discipline",
+      "target": "agents_exploration_layer"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_layered_agent_discipline",
+      "target": "agents_intent_layer"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_layered_agent_discipline",
+      "target": "agents_security_contract_layer"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_security_contract_layer",
+      "target": "agents_least_privilege"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_security_contract_layer",
+      "target": "agents_pr_based_workflow"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_github_workflow_rules",
+      "target": "agents_branch_and_pr_rules"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_branch_and_pr_rules",
+      "target": "agents_pr_based_workflow"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_ci_security_run_discipline",
+      "target": "agents_definition_of_done"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_prompt_change_rules",
+      "target": "agents_pr_based_workflow"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_amali_specific_additions",
+      "target": "agents_approval_gated_self_improvement"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_amali_specific_additions",
+      "target": "agents_eval_foundation_before_training"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "agents_amali_specific_additions",
+      "target": "agents_evidence_labels"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "amali_architecture_components",
+      "label": "AMALI Architecture Components",
+      "nodes": [
+        "readme_amali",
+        "readme_controlled_self_improvement",
+        "readme_moe_routing",
+        "readme_secure_memory",
+        "readme_evaluation",
+        "readme_owner_governed_deployment"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md"
+    },
+    {
+      "id": "repo_agent_operating_discipline",
+      "label": "Repo Agent Operating Discipline",
+      "nodes": [
+        "agents_intent_layer",
+        "agents_evidence_layer",
+        "agents_exploration_layer",
+        "agents_discipline_layer",
+        "agents_security_contract_layer"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md"
+    },
+    {
+      "id": "safe_pr_based_development",
+      "label": "Safe PR-Based Development",
+      "nodes": [
+        "agents_github_workflow_rules",
+        "agents_branch_and_pr_rules",
+        "agents_ci_security_run_discipline",
+        "agents_prompt_change_rules",
+        "agents_definition_of_done"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "AGENTS.md"
+    }
+  ],
+  "built_at_commit": "0f2bab1e2cd29e5910ac252757fa9ac73963aa5d"
+}

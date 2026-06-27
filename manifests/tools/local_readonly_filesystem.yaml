@@ -1,0 +1,30 @@
+# Local, read-only filesystem tool.
+# Lowest practical risk: it may read a fixed allowlist of workspace paths and
+# nothing else. Write/delete/execute/network are explicitly forbidden so that
+# a malformed request can never be reinterpreted as a mutation.
+tool_id: local_readonly_filesystem
+version: 0.1.0
+tool_type: filesystem
+default_permission: read_only
+risk_level: L1
+allowed_operations:
+  - read_file
+  - list_dir
+forbidden_operations:
+  - write_file
+  - delete_file
+  - execute
+  - network
+sandbox_required: false
+network_policy: none
+filesystem_policy: explicit_paths_only
+secret_access: none
+approval_required: false
+audit_required: true
+allowed_paths:
+  - ./README.md
+  - ./docs
+  - ./src
+  - ./tests
+max_ttl_seconds: 300
+description: Read-only access to an explicit allowlist of workspace paths.

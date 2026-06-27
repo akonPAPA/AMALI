@@ -1,0 +1,26 @@
+# Local test runner.
+# Sandbox-required, no network, workspace-read only. It may run selected unit
+# tests; running everything-with-network, installing dependencies, opening a
+# shell, or uploading logs are all forbidden.
+tool_id: local_test_runner
+version: 0.1.0
+tool_type: test_runner
+default_permission: deny
+risk_level: L2
+allowed_operations:
+  - run_pytest_selected
+  - run_unit_tests
+forbidden_operations:
+  - run_all_with_network
+  - install_dependencies
+  - shell
+  - network
+  - upload_logs
+sandbox_required: true
+network_policy: none
+filesystem_policy: workspace_read
+secret_access: none
+approval_required: false
+audit_required: true
+max_ttl_seconds: 180
+description: Runs selected local unit tests inside a (future) sandbox.

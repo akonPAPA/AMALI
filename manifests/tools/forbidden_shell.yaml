@@ -1,0 +1,32 @@
+# Forbidden shell tool.
+# This manifest exists precisely so the kernel can prove it denies it. It is
+# L5 (owner-only / forbidden), defaults to deny, allows no operations, forbids
+# every dangerous one, forbids unrestricted network, and has a zero TTL so no
+# grant could ever be minted even if every other check were bypassed.
+tool_id: forbidden_shell
+version: 0.1.0
+tool_type: shell
+default_permission: deny
+risk_level: L5
+allowed_operations: []
+forbidden_operations:
+  - execute
+  - rm_rf
+  - powershell
+  - curl
+  - wget
+  - ssh
+  - scp
+  - chmod
+  - sudo
+  - delete
+  - format
+  - network
+sandbox_required: true
+network_policy: unrestricted_forbidden
+filesystem_policy: none
+secret_access: none
+approval_required: true
+audit_required: true
+max_ttl_seconds: 0
+description: Intentionally forbidden shell tool; never grantable.
