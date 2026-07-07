@@ -18,6 +18,12 @@ dependencies = [
 dev = [
     "pytest>=8.0",
 ]
+# Local, full-control model runtime (owner choice: no hosted providers).
+local_llm = [
+    "torch>=2.2",
+    "transformers>=4.40",
+    "accelerate>=0.30",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
