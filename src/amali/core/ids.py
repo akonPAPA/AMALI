@@ -18,6 +18,8 @@ __all__ = [
     "new_decision_id",
     "new_grant_id",
     "new_approval_id",
+    "new_model_call_id",
+    "new_trace_id",
 ]
 
 
@@ -63,3 +65,13 @@ def new_grant_id() -> str:
 def new_approval_id() -> str:
     """Return a new owner-approval ID, e.g. ``approval_<uuid>``."""
     return f"approval_{_hex()}"
+
+
+def new_model_call_id() -> str:
+    """Return a new model-invocation output ID, e.g. ``modelcall_<uuid>``."""
+    return f"modelcall_{_hex()}"
+
+
+def new_trace_id() -> str:
+    """Return a new trace ID, e.g. ``trace_<uuid>``."""
+    return f"trace_{_hex()}"

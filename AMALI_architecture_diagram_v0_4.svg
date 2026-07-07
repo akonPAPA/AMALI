@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2600" height="1600" viewBox="0 0 2600 1600">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#5a5f69"/></marker></defs>
+<style>
+  .title { font: 700 42px DejaVu Sans, Arial; fill:#232b36; }
+  .subtitle { font: 700 24px DejaVu Sans, Arial; fill:#505866; }
+  .cardtitle { font: 700 30px DejaVu Sans, Arial; }
+  .body { font: 18px DejaVu Sans, Arial; fill:#232b36; }
+  .small { font: 16px DejaVu Sans, Arial; fill:#232b36; }
+  .note { font: 17px DejaVu Sans, Arial; fill:#383f4a; }
+</style>
+<rect width="2600" height="1600" fill="white"/>
+<text x="1300" y="62" text-anchor="middle" class="title">AMALI v0.4 — Model-Team Intelligence Infrastructure</text>
+<text x="1300" y="108" text-anchor="middle" class="subtitle">Implementation architecture: real algorithms, libraries, workflow, evaluation gates, and owner-governed safety</text>
+<rect x="70" y="165" rx="28" ry="28" width="800" height="610" fill="#e1f4ff" stroke="#a0a0aa" stroke-width="3"/>
+<text x="95" y="220" class="cardtitle" fill="#2196f3">Runtime Spine</text>
+<rect x="125" y="250" rx="22" ry="22" width="690" height="405" fill="white" stroke="#2196f3" stroke-width="3"/>
+<rect x="180" y="278" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="313" text-anchor="middle" class="body">TaskRequest → Risk + Evidence</text>
+<line x1="470" y1="336" x2="470" y2="356" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="180" y="359" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="394" text-anchor="middle" class="body">HER-MoE → RouteDecision</text>
+<line x1="470" y1="417" x2="470" y2="437" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="180" y="440" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="475" text-anchor="middle" class="body">Planner → Agent Group</text>
+<line x1="470" y1="498" x2="470" y2="518" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="180" y="521" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="556" text-anchor="middle" class="body">Verifier/Critic → EWA</text>
+<line x1="470" y1="579" x2="470" y2="599" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="180" y="602" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="637" text-anchor="middle" class="body">AMALIResponse → Audit</text>
+<rect x="95" y="680" rx="16" ry="16" width="750" height="70" fill="white" stroke="#d2d2dc" stroke-width="2"/>
+<text x="115" y="723" class="note">Flow: Observe → Orient → Decide → Act → Evaluate → Govern → Adapt</text>
+<rect x="925" y="165" rx="28" ry="28" width="800" height="610" fill="#f3ebff" stroke="#a0a0aa" stroke-width="3"/>
+<text x="950" y="220" class="cardtitle" fill="#9c57d3">Model-Team Runtime</text>
+<rect x="980" y="250" rx="22" ry="22" width="690" height="405" fill="white" stroke="#9c57d3" stroke-width="3"/>
+<rect x="1035" y="278" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="313" text-anchor="middle" class="body">Generator / Code Generator</text>
+<line x1="1325" y1="336" x2="1325" y2="356" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1035" y="359" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="394" text-anchor="middle" class="body">Verifier / Security Verifier</text>
+<line x1="1325" y1="417" x2="1325" y2="437" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1035" y="440" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="475" text-anchor="middle" class="body">Critic / Evaluator</text>
+<line x1="1325" y1="498" x2="1325" y2="518" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1035" y="521" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="556" text-anchor="middle" class="body">Router-MoE / JEPA-State</text>
+<line x1="1325" y1="579" x2="1325" y2="599" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1035" y="602" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="637" text-anchor="middle" class="body">Retrieval / Data Curator</text>
+<rect x="950" y="680" rx="16" ry="16" width="750" height="70" fill="white" stroke="#d2d2dc" stroke-width="2"/>
+<text x="970" y="723" class="note">Generator is never its own judge</text>
+<rect x="1780" y="165" rx="28" ry="28" width="800" height="610" fill="#fff5e1" stroke="#a0a0aa" stroke-width="3"/>
+<text x="1805" y="220" class="cardtitle" fill="#ff9800">HER-MoE Router</text>
+<rect x="1835" y="250" rx="22" ry="22" width="690" height="405" fill="white" stroke="#ff9800" stroke-width="3"/>
+<rect x="1890" y="278" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="313" text-anchor="middle" class="body">Task + Risk</text>
+<line x1="2180" y1="336" x2="2180" y2="356" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1890" y="359" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="394" text-anchor="middle" class="body">Evidence + Privacy</text>
+<line x1="2180" y1="417" x2="2180" y2="437" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1890" y="440" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="475" text-anchor="middle" class="body">Cost + Latency + History</text>
+<line x1="2180" y1="498" x2="2180" y2="518" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1890" y="521" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="556" text-anchor="middle" class="body">Agents + Models</text>
+<line x1="2180" y1="579" x2="2180" y2="599" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1890" y="602" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="637" text-anchor="middle" class="body">Tools + RAG + Review</text>
+<rect x="1805" y="680" rx="16" ry="16" width="750" height="70" fill="white" stroke="#d2d2dc" stroke-width="2"/>
+<text x="1825" y="723" class="note">Score = Q + Evidence + Safety + Validation − Cost − Risk</text>
+<rect x="70" y="830" rx="28" ry="28" width="800" height="610" fill="#e1fafc" stroke="#a0a0aa" stroke-width="3"/>
+<text x="95" y="885" class="cardtitle" fill="#00bcd4">HSGR + TCSL</text>
+<rect x="125" y="915" rx="22" ry="22" width="690" height="405" fill="white" stroke="#00bcd4" stroke-width="3"/>
+<rect x="180" y="943" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="978" text-anchor="middle" class="body">BM25 + Vector Search</text>
+<line x1="470" y1="1001" x2="470" y2="1021" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="180" y="1024" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="1059" text-anchor="middle" class="body">Code/Source Graph</text>
+<line x1="470" y1="1082" x2="470" y2="1102" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="180" y="1105" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="1140" text-anchor="middle" class="body">Reranker + Citation Check</text>
+<line x1="470" y1="1163" x2="470" y2="1183" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="180" y="1186" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="1221" text-anchor="middle" class="body">TCSL + Evidence Graph</text>
+<line x1="470" y1="1244" x2="470" y2="1264" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="180" y="1267" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="470" y="1302" text-anchor="middle" class="body">Memory + Contradictions</text>
+<rect x="95" y="1345" rx="16" ry="16" width="750" height="70" fill="white" stroke="#d2d2dc" stroke-width="2"/>
+<text x="115" y="1388" class="note">State = task × agent × evidence × risk × memory × time</text>
+<rect x="925" y="830" rx="28" ry="28" width="800" height="610" fill="#e5f8e8" stroke="#a0a0aa" stroke-width="3"/>
+<text x="950" y="885" class="cardtitle" fill="#4caf50">Self-Improvement</text>
+<rect x="980" y="915" rx="22" ry="22" width="690" height="405" fill="white" stroke="#4caf50" stroke-width="3"/>
+<rect x="1035" y="943" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="978" text-anchor="middle" class="body">Failure + Root Cause</text>
+<line x1="1325" y1="1001" x2="1325" y2="1021" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1035" y="1024" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="1059" text-anchor="middle" class="body">FEC → Eval Item</text>
+<line x1="1325" y1="1082" x2="1325" y2="1102" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1035" y="1105" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="1140" text-anchor="middle" class="body">Candidate → Offline Eval</text>
+<line x1="1325" y1="1163" x2="1325" y2="1183" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1035" y="1186" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="1221" text-anchor="middle" class="body">Regression Guard → Gate</text>
+<line x1="1325" y1="1244" x2="1325" y2="1264" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1035" y="1267" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="1325" y="1302" text-anchor="middle" class="body">Canary → Rollback</text>
+<rect x="950" y="1345" rx="16" ry="16" width="750" height="70" fill="white" stroke="#d2d2dc" stroke-width="2"/>
+<text x="970" y="1388" class="note">No self-deploy: eval + approval only</text>
+<rect x="1780" y="830" rx="28" ry="28" width="800" height="610" fill="#ffebeb" stroke="#a0a0aa" stroke-width="3"/>
+<text x="1805" y="885" class="cardtitle" fill="#f46358">Security / Owner Control</text>
+<rect x="1835" y="915" rx="22" ry="22" width="690" height="405" fill="white" stroke="#f46358" stroke-width="3"/>
+<rect x="1890" y="943" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="978" text-anchor="middle" class="body">TRPC/TPC: deny default</text>
+<line x1="2180" y1="1001" x2="2180" y2="1021" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1890" y="1024" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="1059" text-anchor="middle" class="body">Sandbox + JIT credentials</text>
+<line x1="2180" y1="1082" x2="2180" y2="1102" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1890" y="1105" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="1140" text-anchor="middle" class="body">Audit hash chain</text>
+<line x1="2180" y1="1163" x2="2180" y2="1183" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1890" y="1186" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="1221" text-anchor="middle" class="body">Owner freeze / disable</text>
+<line x1="2180" y1="1244" x2="2180" y2="1264" stroke="#5a5f69" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="1890" y="1267" rx="12" ry="12" width="580" height="56" fill="#f8f9fc" stroke="#788291" stroke-width="2"/>
+<text x="2180" y="1302" text-anchor="middle" class="body">Incident + rollback</text>
+<rect x="1805" y="1345" rx="16" ry="16" width="750" height="70" fill="white" stroke="#d2d2dc" stroke-width="2"/>
+<text x="1825" y="1388" class="note">Policy owns authority; model output is untrusted</text>
+<rect x="70" y="1515" rx="18" ry="18" width="2460" height="60" fill="#f8f9fb" stroke="#d2d2dc" stroke-width="2"/><text x="100" y="1552" class="body">Stable core: policy + routing + state + retrieval + verifier + audit + eval + rollback. Research surfaces are promoted only through eval gates.</text></svg>

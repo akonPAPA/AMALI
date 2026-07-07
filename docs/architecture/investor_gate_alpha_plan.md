@@ -34,13 +34,26 @@ auditable and tamper-evident.
 A local policy layer that decides what an actor/task is permitted to do,
 classifies risk, and gates tool permissions. No tool is executed directly;
 the kernel produces permission decisions that a future execution layer must
-honor. **Status: planned.**
+honor. Implemented in `src/amali/policy/` (manifests, TRPC, decisions,
+approvals) and `src/amali/tools/` (grants, executor boundary), with unit,
+negative-security and integration tests. **Status: implemented.**
+
+### AMALI-IGA-02b — Model Gateway Kernel (added)
+The §6.20 Model Gateway: a local boundary that normalizes model calls under
+manifest, privacy, data-class, budget and provider gates, auditing every
+allow/deny. Ships a deterministic no-network backend plus an optional local
+PyTorch (`transformers`) backend behind the same `ModelBackend` protocol —
+no hosted providers wired in. Implemented in `src/amali/model_gateway/`.
+**Status: implemented.**
 
 ### AMALI-IGA-03 — HER-MoE Local Routing Kernel
 A local, deterministic routing kernel that selects among model/expert
 profiles based on task features and recorded uncertainty. Routing decisions
 are recorded as `route_decision_refs` and audited. No neural MoE training;
-routing is configuration- and rule-driven. **Status: planned.**
+routing is configuration- and rule-driven. Implemented in
+`src/amali/router/` (§8 route object, hard constraints, weighted scoring,
+audited `RouteDecision` with ranked fallback chain and exclusion reasons).
+**Status: implemented.**
 
 ### AMALI-IGA-04 — Evidence / RAG Kernel
 A local evidence-retrieval kernel that turns sources into `EvidenceRecord`s
