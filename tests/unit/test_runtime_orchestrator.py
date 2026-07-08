@@ -1,5 +1,6 @@
 """WP8: the Gate A pipeline — evidence-only answers, honest UNKNOWN, gates."""
 
+from amali.activation.planner import ActivationPlan, ActivationRequest, DWACPlanner
 from amali.arbiter import ResponseStatus
 from amali.audit.ledger import AuditLedger
 from amali.contracts.task import (
@@ -10,8 +11,19 @@ from amali.contracts.task import (
     TaskRequest,
 )
 from amali.policy.enums import DataSensitivity, RiskLevel
+from amali.policy.registry import ManifestRegistry
+from amali.retrieval.hsgr import HSGRRetriever, RetrievalResult
+from amali.router.router import HERMoERouter
 from amali.runtime.answerer import DeterministicAnswerer
-from amali.runtime.gate_a import build_gate_a_orchestrator, default_corpus
+from amali.runtime.gate_a import (
+    DETERMINISTIC_MODEL_ID,
+    build_gate_a_orchestrator,
+    default_corpus,
+    default_packs,
+    deterministic_model_manifest,
+    deterministic_route,
+)
+from amali.runtime.orchestrator import RuntimeOrchestrator
 
 from tests.conftest import MANIFESTS_DIR
 
@@ -145,3 +157,91 @@ def test_pipeline_is_deterministic():
     assert a.status == b.status
     assert a.answer_text == b.answer_text
     assert [t.component for t in a.trace] == [t.component for t in b.trace]
+
+
+class _ExcludeDocRetriever(HSGRRetriever):
+    """Test helper: retrieval omits one corpus doc the answerer would need."""
+
+    def __init__(self, corpus, exclude_doc_id: str) -> None:
+        super().__init__(corpus)
+        self._exclude_doc_id = exclude_doc_id
+
+    def retrieve(self, query: str, k: int = 5) -> RetrievalResult:
+        result = super().retrieve(query, k=k)
+        ranked = [s for s in result.ranked if s.doc_id != self._exclude_doc_id]
+        return RetrievalResult(query=query, ranked=ranked)
+
+
+def _orchestrator_with_planner_and_retriever(planner, retriever):
+    ledger = AuditLedger()
+    registry = ManifestRegistry.load_from_dir(MANIFESTS_DIR)
+    router = HERMoERouter(
+        routes=[deterministic_route()],
+        models={DETERMINISTIC_MODEL_ID: deterministic_model_manifest()},
+        ledger=ledger,
+    )
+    return RuntimeOrchestrator(
+        ledger=ledger,
+        registry=registry,
+        router=router,
+        planner=planner,
+        corpus=default_corpus(),
+        retriever=retriever,
+    )
+
+
+def test_answer_requires_retrieved_evidence_not_full_corpus():
+    """Corpus holds the answer, but HSGR did not retrieve it -> no SUCCESS."""
+    retriever = _ExcludeDocRetriever(default_corpus(), "audit_genesis")
+    orch = _orchestrator_with_planner_and_retriever(
+        DWACPlanner(default_packs(), fallback_pack_id="deterministic_answerer_pack"),
+        retriever,
+    )
+    result = orch.run_task(_request("What is the audit ledger genesis hash?"))
+    assert result.status is not ResponseStatus.SUCCESS
+    assert result.answer_text == ""
+
+
+class _InfeasiblePlanner:
+    def plan(self, request: ActivationRequest) -> ActivationPlan:
+        return ActivationPlan(
+            feasible=False,
+            budget_mb=request.budget_mb,
+            uncovered_capabilities=list(request.required_capabilities),
+            reasons=["TEST_INFEASIBLE"],
+        )
+
+
+def test_infeasible_activation_plan_never_success():
+    orch = _orchestrator_with_planner_and_retriever(
+        _InfeasiblePlanner(),
+        HSGRRetriever(default_corpus()),
+    )
+    result = orch.run_task(_request("What is the audit ledger genesis hash?"))
+    assert result.status is ResponseStatus.NEEDS_REVIEW
+    assert "ACTIVATION_INFEASIBLE" in [
+        i.failure_kind for i in result.fec.items
+    ]
+
+
+class _FallbackUncoveredPlanner:
+    def plan(self, request: ActivationRequest) -> ActivationPlan:
+        return ActivationPlan(
+            feasible=True,
+            fallback_used=True,
+            selected_pack_ids=["deterministic_answerer_pack"],
+            total_cost_mb=64,
+            budget_mb=request.budget_mb,
+            covered_capabilities=["answer_from_evidence"],
+            uncovered_capabilities=["retrieve"],
+            reasons=["TEST_FALLBACK"],
+        )
+
+
+def test_fallback_with_uncovered_capabilities_not_success():
+    orch = _orchestrator_with_planner_and_retriever(
+        _FallbackUncoveredPlanner(),
+        HSGRRetriever(default_corpus()),
+    )
+    result = orch.run_task(_request("What is the audit ledger genesis hash?"))
+    assert result.status is ResponseStatus.PARTIAL

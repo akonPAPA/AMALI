@@ -96,12 +96,22 @@ cd D:\amali\amali-core
 
 ## Run the tests
 
+Install the package in editable mode (matches CI), then run pytest:
+
 ```powershell
+python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-`pytest` is configured (in `pyproject.toml`) with `pythonpath = ["src"]`,
-so no install step is required to run the suite.
+For a quick local run without installing, set `PYTHONPATH` so imports resolve:
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m pytest
+```
+
+`pyproject.toml` also sets `pythonpath = ["src"]` for pytest when you invoke it
+from the repo root after install.
 
 ## Scope
 

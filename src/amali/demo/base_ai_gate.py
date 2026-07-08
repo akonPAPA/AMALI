@@ -785,15 +785,15 @@ def _gate_b_smoke(model_id: str) -> dict[str, Any]:
         )
 
         backend = TransformersBackend.from_pretrained(model_id)
-        result = backend.generate(
+        result = backend.complete(
             system_prompt=None,
-            context="Reply with the single word: ready",
-            max_tokens=8,
+            user_context="Reply with the single word: ready",
+            max_output_tokens=8,
         )
         return {
             "ran": True,
             "model_id": model_id,
-            "output_non_empty": bool(result.text.strip()),
+            "output_non_empty": bool(result.output_text.strip()),
         }
     except Exception as exc:  # noqa: BLE001 - smoke must never crash the demo
         return {"ran": False, "error": str(exc)[:200]}

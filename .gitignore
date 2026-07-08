@@ -5,6 +5,8 @@ __pycache__/
 *.env
 *.env.*
 !.env.example
+*.egg-info/
+src/*.egg-info/
 
 # Node
 node_modules/
@@ -15,7 +17,6 @@ build/
 # IDE
 .vscode/
 .idea/
-*AGENTS.md
 *CLAUDE.md
 AMALI_FINAL_MASTER_BLUEPRINT_V2026_06_26_CANONICAL.md
 ARCHITECTURE AND STRUCTURES.md

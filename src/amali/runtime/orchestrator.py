@@ -24,12 +24,12 @@ from amali.arbiter.ewa import (
     arbitrate,
     uge_escalate,
 )
-from amali.audit.ledger import AuditLedger
 from amali.activation.planner import (
     ActivationPlan,
     ActivationRequest,
     DWACPlanner,
 )
+from amali.audit.ledger import AuditLedger
 from amali.contracts.task import TaskHandle, TaskRequest, TaskStatus
 from amali.data_wall.wall import DataFlow, DataWall, WallDecision, WallOutcome
 from amali.debate.review import DebateRecord, run_debate
@@ -63,6 +63,53 @@ _STATUS_MAP = {
     ResponseStatus.NEEDS_REVIEW: TaskStatus.NEEDS_REVIEW,
     ResponseStatus.BLOCKED: TaskStatus.BLOCKED,
 }
+
+
+def _retrieved_evidence_docs(
+    corpus: list[EvidenceDoc], retrieval: RetrievalResult
+) -> list[EvidenceDoc]:
+    """Map ranked retrieval hits back to corpus docs (retrieval order)."""
+    by_id = {doc.doc_id: doc for doc in corpus}
+    return [
+        by_id[scored.doc_id]
+        for scored in retrieval.ranked
+        if scored.doc_id in by_id
+    ]
+
+
+def _apply_dwac_activation_gate(
+    arbitration: ArbitrationResult, plan: ActivationPlan
+) -> ArbitrationResult:
+    """DWAC hard gates: infeasible or degraded activation cannot yield SUCCESS."""
+    if arbitration.status is ResponseStatus.BLOCKED:
+        return arbitration
+
+    status = arbitration.status
+    gates = list(arbitration.hard_gates_fired)
+
+    if not plan.feasible and status is ResponseStatus.SUCCESS:
+        gates.append("DWAC_INFEASIBLE_NEVER_SUCCESS")
+        status = ResponseStatus.NEEDS_REVIEW
+    elif (
+        plan.fallback_used
+        and plan.uncovered_capabilities
+        and status is ResponseStatus.SUCCESS
+    ):
+        gates.append("DWAC_FALLBACK_UNCOVERED_NEVER_SUCCESS")
+        status = ResponseStatus.PARTIAL
+
+    if status is arbitration.status:
+        return arbitration
+
+    return ArbitrationResult(
+        status=status,
+        ewa_score=arbitration.ewa_score,
+        hard_gates_fired=gates,
+        supported=arbitration.supported,
+        unsupported=arbitration.unsupported,
+        contradicted=arbitration.contradicted,
+        insufficient=arbitration.insufficient,
+    )
 
 
 class TraceStep(BaseModel):
@@ -109,13 +156,14 @@ class RuntimeOrchestrator:
         router: HERMoERouter,
         planner: DWACPlanner,
         corpus: list[EvidenceDoc],
+        retriever: HSGRRetriever | None = None,
     ) -> None:
         self._ledger = ledger
         self._registry = registry
         self._router = router
         self._planner = planner
         self._corpus = list(corpus)
-        self._retriever = HSGRRetriever(self._corpus)
+        self._retriever = retriever or HSGRRetriever(self._corpus)
         self._answerer = DeterministicAnswerer()
 
     # -- helpers -----------------------------------------------------------
@@ -306,7 +354,8 @@ class RuntimeOrchestrator:
         )
 
         # 6. Deterministic answer ----------------------------------------------
-        candidate = self._answerer.answer(query, self._corpus)
+        retrieved_docs = _retrieved_evidence_docs(self._corpus, retrieval)
+        candidate = self._answerer.answer(query, retrieved_docs)
         record(
             "answerer",
             "ANSWERED" if candidate.answered else "NO_ANSWER",
@@ -314,12 +363,13 @@ class RuntimeOrchestrator:
 
         # 7. Verify ------------------------------------------------------------
         claims = extract_claims(candidate.text) if candidate.answered else []
-        verdicts = verify_claims(claims, self._corpus)
+        verdicts = verify_claims(claims, retrieved_docs)
         record("verifier", f"VERDICTS_{len(verdicts)}")
 
         # 8. EWA + UGE ----------------------------------------------------------
         arbitration = arbitrate(verdicts)
         arbitration = uge_escalate(arbitration, task_risk=request.task_risk)
+        arbitration = _apply_dwac_activation_gate(arbitration, plan)
         record("ewa_arbiter", arbitration.status.value)
 
         # 9. Debate --------------------------------------------------------------
@@ -351,6 +401,26 @@ class RuntimeOrchestrator:
                         observed=verdict.claim_text,
                     )
                 )
+        if not plan.feasible:
+            failures.append(
+                FailureTrace(
+                    task_id=handle.task_id,
+                    component="dwac",
+                    failure_kind="ACTIVATION_INFEASIBLE",
+                    query=query,
+                    observed=";".join(plan.reasons) or "infeasible plan",
+                )
+            )
+        elif plan.fallback_used and plan.uncovered_capabilities:
+            failures.append(
+                FailureTrace(
+                    task_id=handle.task_id,
+                    component="dwac",
+                    failure_kind="ACTIVATION_FALLBACK_UNCOVERED",
+                    query=query,
+                    observed=",".join(plan.uncovered_capabilities),
+                )
+            )
         if not candidate.answered:
             failures.append(
                 FailureTrace(

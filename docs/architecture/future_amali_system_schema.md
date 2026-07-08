@@ -1,3 +1,12 @@
+# FUTURE / R&D / NOT IMPLEMENTED BY BASE AI GATE
+
+This document is a **future-system flow schematic** for the full AMALI vision.
+It is **not** part of the Investor Gate Alpha / Base AI Gate kernel contract.
+Nothing described below is required to be live in this repository unless a
+separate ADR and implementation PR says otherwise.
+
+---
+
 # Flowchart Schema
 
 ---
