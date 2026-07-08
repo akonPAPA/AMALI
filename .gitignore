@@ -2,8 +2,8 @@
 __pycache__/
 *.py[cod]
 .venv/
-.env
-.env.*
+*.env
+*.env.*
 !.env.example
 
 # Node
@@ -22,7 +22,9 @@ ARCHITECTURE AND STRUCTURES.md
 # OS
 .DS_Store
 Thumbs.db
-
+*AMALI_BASE_AI_GATE_PRIMARY_BUILDER_PROMPT_V4_2000_LINES.md
+*AMALI_BASE_AI_GATE_REFERENCE_MANUAL_V4_50000_LINES.md
+*AMALI_BASE_AI_GATE_V4_GENERATION_MANIFEST.json
 # AMALI local artifacts
 data/
 models/
