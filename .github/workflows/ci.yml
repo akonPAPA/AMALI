@@ -1,0 +1,29 @@
+# AMALI Base AI Gate CI — Gate A only.
+# No GPU, no torch, no model weights, no network beyond pip install of the
+# pinned core dependencies. Gate B (optional local model) never runs in CI.
+name: ci
+
+on:
+  push:
+    branches: ["main", "iga/**"]
+  pull_request:
+
+jobs:
+  gate-a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install core dependencies (no torch)
+        run: |
+          python -m pip install --upgrade pip
+          pip install "pydantic>=2.0" "pyyaml>=6.0" "rich>=13.0" "typer>=0.12" "pytest>=8.0"
+      - name: Import smoke (no torch in core imports)
+        run: |
+          PYTHONPATH=src python -c "import sys; import amali, amali.model_gateway, amali.router, amali.contracts; assert 'torch' not in sys.modules; print('core_import_success: True')"
+      - name: Run test suite
+        run: PYTHONPATH=src python -m pytest -q
+      - name: Run Base AI Gate demo (Gate A)
+        run: python scripts/run_base_ai_gate_demo.py
