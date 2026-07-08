@@ -96,14 +96,15 @@ cd D:\amali\amali-core
 
 ## Run the tests
 
-Install the package in editable mode (matches CI), then run pytest:
+Install the package in editable mode for local development, then run pytest:
 
 ```powershell
 python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-For a quick local run without installing, set `PYTHONPATH` so imports resolve:
+For a quick local run without installing, set `PYTHONPATH` so imports resolve
+(the same approach CI uses):
 
 ```powershell
 $env:PYTHONPATH = "src"
@@ -112,6 +113,9 @@ python -m pytest
 
 `pyproject.toml` also sets `pythonpath = ["src"]` for pytest when you invoke it
 from the repo root after install.
+
+`uv.lock` is an optional local dependency lock; CI still uses direct `pip install`
+for Gate A (see `.github/workflows/ci.yml`).
 
 ## Scope
 

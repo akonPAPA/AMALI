@@ -56,15 +56,29 @@ def _hf_cache_dir() -> Path:
     return Path.home() / ".cache" / "huggingface" / "hub"
 
 
+def _snapshot_has_weight_files(snapshot: Path) -> bool:
+    """True when the snapshot contains real weight artifacts (not config-only)."""
+    if not snapshot.is_dir():
+        return False
+    if any(snapshot.glob("*.safetensors")):
+        return True
+    if any(snapshot.glob("pytorch_model*.bin")):
+        return True
+    if (snapshot / "model.safetensors.index.json").is_file():
+        return True
+    if (snapshot / "pytorch_model.bin.index.json").is_file():
+        return True
+    return False
+
+
 def _weights_cached(model_id: str, cache_dir: Path) -> bool:
     # HF hub layout: models--{org}--{name}/snapshots/<rev>/...
     folder = "models--" + model_id.replace("/", "--")
     snapshots = cache_dir / folder / "snapshots"
     if not snapshots.is_dir():
         return False
-    # A snapshot with at least one file counts as cached weights.
     for snapshot in snapshots.iterdir():
-        if snapshot.is_dir() and any(snapshot.iterdir()):
+        if _snapshot_has_weight_files(snapshot):
             return True
     return False
 

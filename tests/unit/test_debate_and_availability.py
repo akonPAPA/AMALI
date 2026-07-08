@@ -1,5 +1,7 @@
 """WP5 availability gate + WP6 structured debate."""
 
+from pathlib import Path
+
 from amali.arbiter import arbitrate
 from amali.debate import run_debate
 from amali.model_gateway.availability import (
@@ -56,7 +58,40 @@ def test_availability_never_imports_torch_into_this_process():
     assert result.returncode == 0, result.stderr
 
 
-# --- WP6: structured debate --------------------------------------------------
+def _fake_hf_snapshot(tmp_path, model_id: str, rev: str = "abc123") -> Path:
+    folder = "models--" + model_id.replace("/", "--")
+    snap = tmp_path / "hub" / folder / "snapshots" / rev
+    snap.mkdir(parents=True, exist_ok=True)
+    return snap
+
+
+def test_weights_cached_false_for_config_only_snapshot(tmp_path, monkeypatch):
+    monkeypatch.setenv("HF_HOME", str(tmp_path))
+    snap = _fake_hf_snapshot(tmp_path, "test/config-only")
+    (snap / "config.json").write_text("{}", encoding="utf-8")
+    (snap / "tokenizer.json").write_text("{}", encoding="utf-8")
+
+    result = check_local_model_availability("test/config-only")
+
+    assert result.weights_cached_locally is False
+    assert result.status != STATUS_AVAILABLE
+
+
+def test_weights_cached_true_for_safetensors_when_deps_present(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("HF_HOME", str(tmp_path))
+    snap = _fake_hf_snapshot(tmp_path, "test/with-weights")
+    (snap / "model.safetensors").write_bytes(b"\x00" * 8)
+    monkeypatch.setattr(
+        "amali.model_gateway.availability._dep_installed",
+        lambda name: name in ("torch", "transformers"),
+    )
+
+    result = check_local_model_availability("test/with-weights")
+
+    assert result.weights_cached_locally is True
+    assert result.status == STATUS_AVAILABLE
 
 
 def _pipeline(answer: str, evidence=EVIDENCE):
