@@ -24,18 +24,67 @@ technical proof-of-architecture, not a product.
 - **Audit tampering is detectable.** Mutating any prior event or breaking
   a hash link makes `verify_chain()` return `False`.
 
+- **Tools run only under least-privilege grants.** The TRPC compiles every
+  tool request into a typed, audited allow/deny/review decision
+  (default-deny; forbidden shell stays forbidden).
+- **Answers come from evidence or are honestly UNKNOWN.** The Base AI Gate
+  pipeline retrieves, quotes, verifies, and arbitrates — an unsupported
+  claim can never produce SUCCESS.
+
+## Base AI Gate (Gate A)
+
+The deterministic, fully local execution path — no network, no GPU, no
+torch, no model weights:
+
+```text
+TaskRequest -> Data Wall -> TRPC policy -> HER-MoE router -> DWAC plan
+  -> HSGR retrieval -> deterministic answer -> claim extraction
+  -> verifier -> EWA arbitration -> audit -> failure-to-eval
+```
+
+Run it (emits the full canonical artifact set under
+`artifacts/base_ai_gate/<timestamp>/`):
+
+```powershell
+python scripts/run_base_ai_gate_demo.py
+```
+
+Gate B (`--with-local-model`) optionally smokes an owner-downloaded local
+model; a missing model reports `SKIPPED_LOCAL_MODEL_NOT_AVAILABLE` and
+never fails Gate A. No frontier-superiority claims are made anywhere:
+external comparisons are `NOT_PROVEN` without a stored baseline
+(`fixtures/baselines/README.md`).
+
 ## Layout
 
 ```text
 src/amali/
-  core/      ids + domain errors
-  state/     typed Pydantic state models + in-memory store
-  audit/     hash-chained audit ledger
-  evidence/  claim construction helpers
+  core/          ids + domain errors
+  state/         typed Pydantic state models + in-memory store
+  audit/         hash-chained audit ledger + permission events
+  evidence/      claim construction helpers
+  contracts/     TaskRequest/TaskHandle boundary schemas
+  policy/        TRPC permission compiler + manifests registry
+  tools/         tool requests, grant checks, executor boundary
+  security/      redaction + secret handles
+  data_wall/     flow-aware data admission matrix
+  model_gateway/ model invocation boundary + availability gate
+  router/        HER-MoE system router
+  retrieval/     RICARDO-HSGR deterministic retrieval
+  verifier/      claim extraction + verification
+  arbiter/       RICARDO-EWA + AMALI-UGE
+  activation/    AMALI-DWAC activation planner
+  debate/        rule-based structured debate
+  eval/          RICARDO-FEC failure-to-eval compiler
+  benchmarks/    deterministic benchmark + honest comparison
+  training/      training-readiness manifests + contamination check
+  runtime/       Gate A orchestrator + deterministic answerer
+  demo/          Base AI Gate demo emitter
 docs/
-  architecture/investor_gate_alpha_plan.md
-  adr/ADR_001..ADR_003
-tests/unit/  unit tests
+  architecture/  plans + component docs
+  adr/           ADR_001..ADR_004
+  algorithms/    algorithm proof documentation
+tests/unit/  tests/integration/
 ```
 
 ## Activate the virtualenv (Windows / PowerShell)
@@ -47,12 +96,26 @@ cd D:\amali\amali-core
 
 ## Run the tests
 
+Install the package in editable mode for local development, then run pytest:
+
 ```powershell
+python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-`pytest` is configured (in `pyproject.toml`) with `pythonpath = ["src"]`,
-so no install step is required to run the suite.
+For a quick local run without installing, set `PYTHONPATH` so imports resolve
+(the same approach CI uses):
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m pytest
+```
+
+`pyproject.toml` also sets `pythonpath = ["src"]` for pytest when you invoke it
+from the repo root after install.
+
+`uv.lock` is an optional local dependency lock; CI still uses direct `pip install`
+for Gate A (see `.github/workflows/ci.yml`).
 
 ## Scope
 

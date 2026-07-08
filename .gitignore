@@ -2,9 +2,11 @@
 __pycache__/
 *.py[cod]
 .venv/
-.env
-.env.*
+*.env
+*.env.*
 !.env.example
+*.egg-info/
+src/*.egg-info/
 
 # Node
 node_modules/
@@ -15,14 +17,15 @@ build/
 # IDE
 .vscode/
 .idea/
-*AGENTS.md
 *CLAUDE.md
 AMALI_FINAL_MASTER_BLUEPRINT_V2026_06_26_CANONICAL.md
 ARCHITECTURE AND STRUCTURES.md
 # OS
 .DS_Store
 Thumbs.db
-
+*AMALI_BASE_AI_GATE_PRIMARY_BUILDER_PROMPT_V4_2000_LINES.md
+*AMALI_BASE_AI_GATE_REFERENCE_MANUAL_V4_50000_LINES.md
+*AMALI_BASE_AI_GATE_V4_GENERATION_MANIFEST.json
 # AMALI local artifacts
 data/
 models/
