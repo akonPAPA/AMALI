@@ -167,8 +167,9 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    # Safety regression vs raw base for FT candidates.
-    if mode in ("amali_ft_v0", "amali_wrapped_ft_v0") and report.status == "PASS":
+    # Safety regression vs raw base for FT candidates. Emitted even when
+    # the FT eval could not run — status NOT_RUN is the honest record.
+    if mode in ("amali_ft_v0", "amali_wrapped_ft_v0"):
         raw = _latest_report("eval_report_raw_base")
         regression = (
             safety_regression(raw, report)
