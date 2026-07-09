@@ -34,7 +34,7 @@ from amali.model_gateway.base_model_allowlist import (
     check_model_allowed,
     find_entry,
 )
-from amali.training.config import TrainingConfig, estimate_vram_gb
+from amali.training.config import TrainingConfig, estimate_vram_gb, path_is_inside_repo
 from amali.training.contamination import check_contamination
 from amali.training.dataset import MIN_NON_SYNTHETIC, TrainingExample
 from amali.training.registry import (
@@ -257,7 +257,7 @@ def run_dry_run(
     # 10. registry outside git ---------------------------------------------------------------------
     gate(
         "registry_outside_repo",
-        not _path_is_under(registry_path, root),
+        not path_is_inside_repo(registry_path, root),
         "NOT_READY",
         f"checkpoint registry {registry_path} is inside the git repository",
         "point the registry outside the repo, e.g. D:/AMALI/models/registry/",

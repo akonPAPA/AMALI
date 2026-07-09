@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from amali.model_gateway.availability import ModelAvailability
-from amali.training.config import TrainingConfig, estimate_vram_gb
+from amali.training.config import TrainingConfig, estimate_vram_gb, path_is_inside_repo
 from amali.training import trainer as trainer_mod
 from amali.training.trainer import (
     build_training_plan,
@@ -128,6 +128,11 @@ def test_output_inside_repo_detected(tmp_path):
     outside = _config(tmp_path)
     assert inside.output_inside(REPO_ROOT) is True
     assert outside.output_inside(REPO_ROOT) is False
+
+
+def test_windows_absolute_default_output_not_inside_repo_on_posix_ci():
+    assert path_is_inside_repo("D:/AMALI/models/amali_ft_v0", REPO_ROOT) is False
+    assert path_is_inside_repo("//server/share/amali_ft_v0", REPO_ROOT) is False
 
 
 # --- VRAM heuristic -------------------------------------------------------------

@@ -12,7 +12,7 @@ dry-run works on machines without training deps installed.
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -22,6 +22,7 @@ __all__ = [
     "TrainingConfig",
     "VramEstimate",
     "estimate_vram_gb",
+    "path_is_inside_repo",
     "DEFAULT_OUTPUT_DIR",
 ]
 
@@ -31,6 +32,24 @@ _METHODS = ("lora", "qlora")
 _QUANTIZATIONS = ("none", "4bit_nf4")
 _PRECISIONS = ("bf16", "fp16", "fp32")
 _OPTIMIZERS = ("adamw_torch", "adamw_8bit", "paged_adamw_8bit")
+
+
+def path_is_inside_repo(path_value: str | Path, repo_root: str | Path) -> bool:
+    """Return True only when path_value resolves under repo_root.
+
+    On POSIX, ``Path("D:/AMALI/...")`` is relative and would resolve under the
+    checkout. Treat Windows absolute/UNC strings as external in that case.
+    """
+    path = Path(path_value)
+    windows_path = PureWindowsPath(str(path_value))
+    if windows_path.is_absolute() and not Path("C:/").is_absolute():
+        return False
+    try:
+        resolved_path = path.resolve()
+        resolved_root = Path(repo_root).resolve()
+        return resolved_path == resolved_root or resolved_root in resolved_path.parents
+    except OSError:
+        return False
 
 
 class TrainingConfig(BaseModel):
@@ -126,12 +145,7 @@ class TrainingConfig(BaseModel):
 
     def output_inside(self, repo_root: str | Path) -> bool:
         """True when output_dir is (wrongly) inside the git repository."""
-        try:
-            out = Path(self.output_dir).resolve()
-            root = Path(repo_root).resolve()
-            return out == root or root in out.parents
-        except OSError:
-            return False
+        return path_is_inside_repo(self.output_dir, repo_root)
 
 
 class VramEstimate(BaseModel):
