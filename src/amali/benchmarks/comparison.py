@@ -32,6 +32,9 @@ __all__ = [
     "ComparisonReport",
     "compare_deterministic_baseline",
     "load_external_baseline",
+    "ThreeWayComparison",
+    "three_way_comparison",
+    "FORBIDDEN_CLAIM_MARKERS",
 ]
 
 STATUS_PROVEN_LOCAL = "PROVEN_LOCAL_DETERMINISTIC"
@@ -125,6 +128,132 @@ def compare_deterministic_baseline(
         notes=[
             "external frontier comparisons (GLM/DeepSeek/Claude/...) are "
             "NOT addressed by this mode"
+        ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 11: three-way comparison over the frozen Base Model Gate suite.
+# ---------------------------------------------------------------------------
+
+FORBIDDEN_CLAIM_MARKERS = (
+    "beats gpt",
+    "beats claude",
+    "beats deepseek",
+    "beats glm",
+    "beats qwen",
+    "frontier model",
+    "frontier-class",
+    "agi",
+    "asi",
+    "trained from scratch",
+)
+
+_COMPARED_METRICS = (
+    "overall_score",
+    "evidence_grounded_score",
+    "honest_unknown_score",
+    "safety_score",
+    "tool_permission_score",
+    "injection_as_data_score",
+    "unsupported_success_rate",
+    "refusal_correctness",
+    "citation_support_score",
+)
+
+_ALLOWED_THREE_WAY_CLAIM = (
+    "AMALI-FT-v0, evaluated through the AMALI control plane, improves over "
+    "the raw same base model on the frozen AMALI eval suite, especially on "
+    "honesty, policy, and unsupported-success metrics."
+)
+
+
+class ThreeWayComparison(BaseModel):
+    """raw_base vs amali_wrapped_raw_base vs amali_wrapped_ft_v0.
+
+    Same frozen suite, same scorer, same decoding policy. The claim text
+    is generated here and structurally cannot contain a frontier claim.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    status: str  # PASS | NOT_RUN
+    suite_hash: str = ""
+    metrics_by_mode: dict[str, dict[str, float]] = Field(default_factory=dict)
+    claim: str = ""
+    external_status: str = STATUS_NOT_PROVEN
+    notes: list[str] = Field(default_factory=list)
+
+
+def three_way_comparison(
+    *,
+    raw_base: "object | None",
+    wrapped_raw: "object | None",
+    wrapped_ft: "object | None",
+    ft_unwrapped: "object | None" = None,
+    suite_hash: str = "",
+) -> ThreeWayComparison:
+    """Compare eval reports (``ModelEvalReport``-shaped, status PASS).
+
+    Missing raw base or missing AMALI-FT means NOT_RUN — a comparison
+    with an absent side is not a comparison.
+    """
+
+    def usable(report) -> bool:
+        return report is not None and getattr(report, "status", "") == "PASS"
+
+    if not usable(raw_base) or not usable(wrapped_ft):
+        missing = []
+        if not usable(raw_base):
+            missing.append("raw_base")
+        if not usable(wrapped_ft):
+            missing.append("amali_wrapped_ft_v0")
+        return ThreeWayComparison(
+            status="NOT_RUN",
+            suite_hash=suite_hash,
+            claim="",
+            notes=[f"missing eval reports: {missing}"],
+        )
+
+    metrics: dict[str, dict[str, float]] = {}
+    for mode, report in (
+        ("raw_base", raw_base),
+        ("amali_wrapped_raw_base", wrapped_raw),
+        ("amali_wrapped_ft_v0", wrapped_ft),
+        ("amali_ft_v0_unwrapped", ft_unwrapped),
+    ):
+        if usable(report):
+            metrics[mode] = {
+                k: report.metrics.get(k, 0.0) for k in _COMPARED_METRICS
+            }
+
+    improved = (
+        metrics["amali_wrapped_ft_v0"]["honest_unknown_score"]
+        > metrics["raw_base"]["honest_unknown_score"]
+        and metrics["amali_wrapped_ft_v0"]["safety_score"]
+        >= metrics["raw_base"]["safety_score"]
+        and metrics["amali_wrapped_ft_v0"]["unsupported_success_rate"] == 0.0
+    )
+    claim = (
+        _ALLOWED_THREE_WAY_CLAIM
+        if improved
+        else (
+            "The candidate did not improve over the raw base on the frozen "
+            "AMALI eval suite; no improvement claim is made."
+        )
+    )
+    assert not any(m in claim.lower() for m in FORBIDDEN_CLAIM_MARKERS)
+
+    return ThreeWayComparison(
+        status="PASS",
+        suite_hash=suite_hash,
+        metrics_by_mode=metrics,
+        claim=claim,
+        external_status=STATUS_NOT_PROVEN,
+        notes=[
+            "external systems (GPT/Claude/DeepSeek/GLM/Qwen-as-a-service) "
+            "are NOT compared: no stored baselines exist, so any such "
+            "claim stays NOT_PROVEN",
         ],
     )
 
