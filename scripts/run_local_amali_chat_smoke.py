@@ -34,6 +34,7 @@ from amali.eval.model_eval import ControlPlaneWrapper, parse_model_text  # noqa:
 from amali.eval.suite import EvalItem, EvalSection  # noqa: E402
 from amali.model_gateway.base_model_allowlist import (  # noqa: E402
     FLOATING_REVISIONS,
+    check_model_allowed,
 )
 
 READINESS_BASE = REPO_ROOT / "artifacts" / "base_model_readiness"
@@ -157,6 +158,15 @@ def main() -> int:
                 f"promotion decision is {decision!r}; AMALI-FT-v0 does not "
                 "exist, so FT chat modes are refused (no fake FT demo)"
             )
+
+    if status == "SUCCESS" and args.mode in (
+        "raw_base",
+        "amali_wrapped_raw_base",
+    ):
+        decision = check_model_allowed(args.model_id, revision=args.revision)
+        if not decision.allowed:
+            status = "POLICY_BLOCKED"
+            reasons.append(f"allowlist refused: {decision.reasons}")
 
     if status == "SUCCESS" and (
         args.revision is None or args.revision in FLOATING_REVISIONS

@@ -37,6 +37,7 @@ from amali.eval.model_eval import (  # noqa: E402
 from amali.eval.suite import EvalSuiteManifest, load_seed_items  # noqa: E402
 from amali.model_gateway.base_model_allowlist import (  # noqa: E402
     FLOATING_REVISIONS,
+    check_model_allowed,
 )
 
 SEED_PATH = REPO_ROOT / "fixtures" / "eval" / "base_model_gate_seed.json"
@@ -138,9 +139,26 @@ def main() -> int:
         **json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     )
 
+    if mode in ("raw_base", "amali_wrapped_raw_base"):
+        decision = check_model_allowed(args.model_id, revision=args.revision)
+        if not decision.allowed:
+            status, backend, reasons = (
+                "POLICY_BLOCKED",
+                None,
+                [f"allowlist refused: {decision.reasons}"],
+            )
+        else:
+            status = ""
+            backend = None
+            reasons = []
+    else:
+        status = ""
+        backend = None
+        reasons = []
+
     # Local model evals are only meaningful against an exact pinned
     # snapshot: a floating revision cannot anchor a comparable report.
-    if mode != "deterministic_gate_a" and (
+    if not status and mode != "deterministic_gate_a" and (
         args.revision is None or args.revision in FLOATING_REVISIONS
     ):
         status, backend, reasons = (
@@ -152,7 +170,7 @@ def main() -> int:
                 "same SHA here"
             ],
         )
-    else:
+    elif not status:
         status, backend, reasons = _build_backend(mode, args.model_id, args.revision)
     if backend is None:
         report = ModelEvalReport(

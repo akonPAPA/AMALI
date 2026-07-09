@@ -58,9 +58,10 @@ def test_non_allowlisted_model_is_policy_blocked(tmp_path):
     assert not report.generation_executed
 
 
-def test_missing_weights_cannot_reach_the_loader(tmp_path):
+def test_missing_weights_cannot_reach_the_loader(monkeypatch, tmp_path):
     # even a loader that would report SUCCESS is never invoked without
     # a real, complete local snapshot — fake availability cannot pass.
+    monkeypatch.setattr("amali.model_gateway.smoke._deps_missing", lambda: [])
     report = run_gateway_smoke(
         MODEL, REV, cache_dir=tmp_path, load_fn=_fake_success_loader
     )
@@ -68,7 +69,8 @@ def test_missing_weights_cannot_reach_the_loader(tmp_path):
     assert not report.generation_executed
 
 
-def test_incomplete_snapshot_is_typed_not_success(tmp_path):
+def test_incomplete_snapshot_is_typed_not_success(monkeypatch, tmp_path):
+    monkeypatch.setattr("amali.model_gateway.smoke._deps_missing", lambda: [])
     cache = _cache(tmp_path, ["config.json", "model.safetensors"])
     report = run_gateway_smoke(
         MODEL, REV, cache_dir=cache, load_fn=_fake_success_loader
@@ -76,7 +78,8 @@ def test_incomplete_snapshot_is_typed_not_success(tmp_path):
     assert report.status == "MODEL_INCOMPLETE"
 
 
-def test_revision_mismatch_is_typed(tmp_path):
+def test_revision_mismatch_is_typed(monkeypatch, tmp_path):
+    monkeypatch.setattr("amali.model_gateway.smoke._deps_missing", lambda: [])
     cache = _cache(tmp_path, FULL_SNAPSHOT)
     report = run_gateway_smoke(
         MODEL, "b" * 40, cache_dir=cache, load_fn=_fake_success_loader
@@ -96,7 +99,8 @@ def test_missing_deps_reported(monkeypatch, tmp_path):
     assert report.owner_actions
 
 
-def test_real_snapshot_reaches_loader_and_records_generation(tmp_path):
+def test_real_snapshot_reaches_loader_and_records_generation(monkeypatch, tmp_path):
+    monkeypatch.setattr("amali.model_gateway.smoke._deps_missing", lambda: [])
     cache = _cache(tmp_path, FULL_SNAPSHOT)
     report = run_gateway_smoke(
         MODEL, REV, cache_dir=cache, load_fn=_fake_success_loader
@@ -106,7 +110,11 @@ def test_real_snapshot_reaches_loader_and_records_generation(tmp_path):
     assert report.output_matched
 
 
-def test_mismatched_output_is_recorded_but_still_a_real_generation(tmp_path):
+def test_mismatched_output_is_recorded_but_still_a_real_generation(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr("amali.model_gateway.smoke._deps_missing", lambda: [])
+
     def loader(model_id, revision, local_files_only, max_new_tokens, report):
         return report.model_copy(
             update={
@@ -126,7 +134,9 @@ def test_mismatched_output_is_recorded_but_still_a_real_generation(tmp_path):
     assert report.output_text == "something else entirely"
 
 
-def test_load_failure_is_typed_not_success(tmp_path):
+def test_load_failure_is_typed_not_success(monkeypatch, tmp_path):
+    monkeypatch.setattr("amali.model_gateway.smoke._deps_missing", lambda: [])
+
     def loader(model_id, revision, local_files_only, max_new_tokens, report):
         return report.model_copy(
             update={

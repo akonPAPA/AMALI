@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -198,3 +199,25 @@ def test_readiness_script_requires_base_comparison_not_three_way(
     assert data["status"] == "BASE_MODEL_NOT_READY"
     assert data["metrics"]["comparison"] == "NOT_RUN"
     assert data["metrics"]["amali_ft_status"] == "AMALI_FT_NOT_READY"
+
+
+def test_core_import_subprocess_gets_source_checkout_pythonpath(monkeypatch):
+    mod = _load_script("check_base_model_readiness")
+    captured: dict = {}
+    monkeypatch.setenv("PYTHONPATH", "existing_path")
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        captured["env"] = kwargs["env"]
+
+        class Result:
+            returncode = 0
+
+        return Result()
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+
+    assert mod._core_import_torch_free() is True
+    pythonpath = captured["env"]["PYTHONPATH"].split(os.pathsep)
+    assert pythonpath[0] == str(REPO_ROOT / "src")
+    assert "existing_path" in pythonpath

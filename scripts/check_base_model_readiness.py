@@ -19,6 +19,7 @@ BASE_MODEL_READY.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -84,6 +85,12 @@ def _core_import_torch_free() -> bool:
         "import amali.router; "
         "raise SystemExit(0 if 'torch' not in sys.modules else 1)"
     )
+    env = os.environ.copy()
+    src_path = str(REPO_ROOT / "src")
+    existing = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = (
+        src_path if not existing else os.pathsep.join([src_path, existing])
+    )
     try:
         out = subprocess.run(
             [sys.executable, "-c", code],
@@ -91,6 +98,7 @@ def _core_import_torch_free() -> bool:
             text=True,
             timeout=120,
             cwd=REPO_ROOT,
+            env=env,
         )
         return out.returncode == 0
     except Exception:  # noqa: BLE001 - a broken interpreter is a failure
