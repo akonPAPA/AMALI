@@ -134,8 +134,12 @@ def collect_source_files(repo_root: str | Path) -> list[Path]:
     """Enumerate approved local source files, deterministically ordered.
 
     fixtures/ is deliberately absent: eval fixtures and holdout material
-    must never become training data.
+    must never become training data. Files under the raw data dir enter
+    only through a fully VALID owner sourcepack (Stage 1): an invalid
+    pack contributes nothing.
     """
+    from amali.training.sourcepack import approved_training_files
+
     root = Path(repo_root)
     files: list[Path] = []
     for rel in APPROVED_RELATIVE_SOURCES:
@@ -148,8 +152,8 @@ def collect_source_files(repo_root: str | Path) -> list[Path]:
     if RAW_DATA_DIR.is_dir():
         files.extend(
             p
-            for p in sorted(RAW_DATA_DIR.rglob("*"))
-            if p.is_file() and p.suffix.lower() in (".md", ".txt")
+            for p in approved_training_files(RAW_DATA_DIR)
+            if p.suffix.lower() in (".md", ".txt", ".jsonl")
         )
     return sorted(set(files), key=lambda p: str(p).lower())
 
@@ -349,6 +353,91 @@ def build_training_dataset(
         # Holdout / eval material must never be seen here, but stay
         # defensive: anything under fixtures/ is treated as holdout.
         is_holdout = "fixtures" in source_id.lower()
+
+        # Owner-authored .jsonl example files (sourcepack-approved) are
+        # parsed row-wise: each row is one non-synthetic example, still
+        # wall-checked like everything else.
+        if path.suffix.lower() == ".jsonl":
+            for index, line in enumerate(text.splitlines()):
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    risks.append(
+                        f"invalid jsonl row skipped: {source_id}:{index + 1}"
+                    )
+                    continue
+                if not isinstance(row, dict) or not (
+                    isinstance(row.get("instruction"), str)
+                    and isinstance(row.get("expected_response"), str)
+                ):
+                    risks.append(
+                        f"non-schema jsonl row skipped: {source_id}:{index + 1}"
+                    )
+                    continue
+                candidates += 1
+                combined = f"{row['instruction']}\n{row['expected_response']}"
+                sensitivity = (
+                    DataSensitivity.SECRET
+                    if contains_secret(row)
+                    else DataSensitivity.INTERNAL
+                )
+                decision = wall.check(
+                    flow=DataFlow.TRAINING,
+                    sensitivity=sensitivity,
+                    payload={"text": combined},
+                    is_holdout=is_holdout,
+                )
+                wall_decisions.append(
+                    {
+                        "decision_id": decision.decision_id,
+                        "source_id": source_id,
+                        "chunk_index": index,
+                        "sensitivity": sensitivity.value,
+                        "outcome": decision.outcome.value,
+                        "reasons": decision.reasons,
+                    }
+                )
+                if decision.outcome is WallOutcome.BLOCK:
+                    blocked += 1
+                    continue
+                if decision.outcome is WallOutcome.REDACT:
+                    redacted += 1
+                content_hash = _sha256(
+                    canonical_json(
+                        {
+                            "instruction": row["instruction"],
+                            "response": row["expected_response"],
+                        }
+                    )
+                )
+                approved.append(
+                    TrainingExample(
+                        example_id=f"bmg_{source_hash[:8]}_{index:04d}",
+                        source_id=source_id,
+                        source_hash=source_hash,
+                        source_path=str(path),
+                        data_class="owner_example",
+                        synthetic=False,
+                        instruction=row["instruction"],
+                        input_context=str(row.get("input_context", "")),
+                        expected_response=row["expected_response"],
+                        expected_status=str(
+                            row.get("expected_status", "SUCCESS")
+                        ),
+                        required_citations=list(
+                            row.get("required_citations", [])
+                        ),
+                        forbidden_outputs=list(
+                            row.get("forbidden_outputs", [])
+                        ),
+                        behavior_tags=list(row.get("behavior_tags", [])),
+                        data_wall_decision_id=decision.decision_id,
+                        content_hash=content_hash,
+                    )
+                )
+            continue
 
         for index, chunk in enumerate(_chunks(text)):
             candidates += 1

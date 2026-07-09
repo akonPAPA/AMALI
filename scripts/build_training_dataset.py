@@ -24,7 +24,14 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from amali.audit.ledger import AuditLedger  # noqa: E402
-from amali.training.dataset import build_training_dataset  # noqa: E402
+from amali.training.dataset import (  # noqa: E402
+    MIN_NON_SYNTHETIC,
+    build_training_dataset,
+)
+from amali.training.sourcepack import (  # noqa: E402
+    SOURCEPACK_ROOT,
+    validate_sourcepack,
+)
 
 OUTPUT_PATH = Path("D:/AMALI/data/processed/amali_bmg_train.jsonl")
 
@@ -50,6 +57,7 @@ def _repo_ref() -> str:
 
 
 def main() -> int:
+    sourcepack_report = validate_sourcepack(SOURCEPACK_ROOT)
     ledger = AuditLedger()
     report, manifest, _examples = build_training_dataset(
         repo_root=REPO_ROOT,
@@ -85,6 +93,9 @@ def main() -> int:
                     "final_examples": report.final_examples,
                     "non_synthetic_count": report.non_synthetic_count,
                     "synthetic_count": report.synthetic_count,
+                    "min_required_non_synthetic": MIN_NON_SYNTHETIC,
+                    "sourcepack_validation_status": sourcepack_report.status,
+                    "ready_for_training": report.status == "READY",
                 },
                 decisions=[],
                 risks=report.risks,
@@ -103,7 +114,10 @@ def main() -> int:
         f"| deduped away | {report.deduped} |\n"
         f"| final examples | {report.final_examples} |\n"
         f"| non-synthetic | {report.non_synthetic_count} |\n"
-        f"| synthetic (labeled) | {report.synthetic_count} |\n\n"
+        f"| synthetic (labeled) | {report.synthetic_count} |\n"
+        f"| training floor | {MIN_NON_SYNTHETIC} |\n"
+        f"| sourcepack validation | {sourcepack_report.status} |\n"
+        f"| ready for training | {report.status == 'READY'} |\n\n"
         "Risks:\n"
         + "\n".join(f"- {r}" for r in report.risks or ["none recorded"])
         + "\n",

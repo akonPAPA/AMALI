@@ -127,6 +127,90 @@ def test_collect_source_files_excludes_fixtures():
     assert all("fixtures" not in str(f).lower() for f in files)
 
 
+def test_synthetic_examples_never_count_toward_floor(tmp_path):
+    # One real source yields a couple of non-synthetic chunks plus the
+    # labeled synthetic behaviors. With a floor above the non-synthetic
+    # count the build must not be READY, no matter how many synthetic
+    # examples exist.
+    src = tmp_path / "doc.md"
+    src.write_text(CLEAN_TEXT, encoding="utf-8")
+    report, _, examples = build_training_dataset(
+        repo_root=REPO_ROOT,
+        output_path=tmp_path / "train.jsonl",
+        ledger=AuditLedger(),
+        source_files=[src],
+        min_non_synthetic=10_000,
+    )
+    assert report.synthetic_count > 0
+    assert report.status == "DATASET_NOT_READY"
+
+
+def test_dataset_at_floor_is_ready(tmp_path):
+    src = tmp_path / "doc.md"
+    src.write_text(CLEAN_TEXT, encoding="utf-8")
+    report, manifest, examples = build_training_dataset(
+        repo_root=REPO_ROOT,
+        output_path=tmp_path / "train.jsonl",
+        ledger=AuditLedger(),
+        source_files=[src],
+        min_non_synthetic=1,
+    )
+    assert report.non_synthetic_count >= 1
+    assert report.status == "READY"
+    assert manifest is not None
+
+
+def test_owner_jsonl_rows_become_non_synthetic_examples(tmp_path):
+    rows = [
+        {
+            "instruction": "Explain the AMALI audit ledger.",
+            "expected_response": CLEAN_TEXT,
+            "expected_status": "SUCCESS",
+        },
+        {
+            "instruction": "What score did the unrun benchmark give?",
+            "expected_response": "UNKNOWN. No such evaluation has been run.",
+            "expected_status": "UNKNOWN",
+        },
+    ]
+    src = tmp_path / "owner_examples.jsonl"
+    src.write_text(
+        "\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8"
+    )
+    report, _, examples = build_training_dataset(
+        repo_root=REPO_ROOT,
+        output_path=tmp_path / "train.jsonl",
+        ledger=AuditLedger(),
+        source_files=[src],
+    )
+    owner_examples = [e for e in examples if e.data_class == "owner_example"]
+    assert len(owner_examples) == 2
+    assert all(not e.synthetic for e in owner_examples)
+    assert owner_examples[1].expected_status == "UNKNOWN"
+
+
+def test_owner_jsonl_secret_row_blocked(tmp_path):
+    rows = [
+        {
+            "instruction": "Store this key.",
+            "expected_response": "sk-abcdefghijklmnopqrstuvwx is the key.",
+        }
+    ]
+    src = tmp_path / "owner_examples.jsonl"
+    src.write_text(json.dumps(rows[0]) + "\n", encoding="utf-8")
+    report, _, examples = build_training_dataset(
+        repo_root=REPO_ROOT,
+        output_path=tmp_path / "train.jsonl",
+        ledger=AuditLedger(),
+        source_files=[src],
+    )
+    assert report.blocked >= 1
+    assert all(
+        "sk-abcdefghijklmnopqrstuvwx" not in e.expected_response
+        for e in examples
+    )
+
+
 def test_jsonl_output_examples_carry_wall_decisions(tmp_path):
     src = tmp_path / "doc.md"
     src.write_text(CLEAN_TEXT, encoding="utf-8")
