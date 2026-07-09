@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
 
@@ -23,6 +24,7 @@ from amali.eval.suite import (
     EvalSuiteManifest,
     load_seed_items,
 )
+from amali.model_gateway import availability
 from amali.model_gateway.adapter_loader import load_ft_backend
 from amali.training.registry import (
     CheckpointManifest,
@@ -222,6 +224,16 @@ def test_parse_model_text_statuses():
 # --- adapter loader ------------------------------------------------------------------
 
 
+_MANIFEST_REVISION = "0123abc0123abc0123abc0123abc0123abc01234"
+
+# The loader's deps gate sits before its snapshot gate; loader-level
+# snapshot outcomes are only reachable when these are installed.
+_LOADER_DEPS_PRESENT = all(
+    importlib.util.find_spec(m) is not None
+    for m in ("torch", "transformers", "peft")
+)
+
+
 def _fake_checkpoint(tmp_path: Path) -> tuple[Path, CheckpointManifest]:
     adapter_dir = tmp_path / "adapter"
     adapter_dir.mkdir()
@@ -231,7 +243,7 @@ def _fake_checkpoint(tmp_path: Path) -> tuple[Path, CheckpointManifest]:
         checkpoint_id="ckpt_test",
         adapter_name="amali_ft_v0",
         base_model_id="Qwen/Qwen2.5-1.5B-Instruct",
-        base_model_revision="0123abc0123abc0123abc0123abc0123abc01234",
+        base_model_revision=_MANIFEST_REVISION,
         training_config_hash="c" * 64,
         dataset_manifest_hash="d" * 64,
         eval_suite_hash="e" * 64,
@@ -243,6 +255,39 @@ def _fake_checkpoint(tmp_path: Path) -> tuple[Path, CheckpointManifest]:
     registry_path = tmp_path / "registry.json"
     register_checkpoint(manifest, registry_path=registry_path)
     return registry_path, manifest
+
+
+def _isolated_hf_cache(
+    tmp_path: Path, revision: str | None = None
+) -> Path:
+    """A temp HF-hub-layout cache, optionally with one full fake snapshot.
+
+    Every adapter-loader test injects this so the owner's real HF cache
+    (which may hold a real base snapshot at a real revision) can never
+    influence the outcome.
+    """
+    cache = tmp_path / "hf_cache"
+    cache.mkdir(exist_ok=True)
+    if revision is not None:
+        snap = (
+            cache
+            / "models--Qwen--Qwen2.5-1.5B-Instruct"
+            / "snapshots"
+            / revision
+        )
+        snap.mkdir(parents=True)
+        for name in ("config.json", "tokenizer.json", "model.safetensors"):
+            (snap / name).write_text("x", encoding="utf-8")
+    return cache
+
+
+def _forbid_real_hf_cache(monkeypatch) -> None:
+    """Any fallback to the default HF cache dir fails the test outright."""
+    monkeypatch.setattr(
+        availability,
+        "_hf_cache_dir",
+        lambda: pytest.fail("unit test consulted the real HF cache"),
+    )
 
 
 def test_missing_adapter_honest_skip(tmp_path):
@@ -265,14 +310,59 @@ def test_tampered_adapter_refused(tmp_path):
     assert backend is None
 
 
-def test_intact_checkpoint_verifies_without_model_load(tmp_path):
+def test_intact_checkpoint_verifies_without_model_load(tmp_path, monkeypatch):
     registry_path, _ = _fake_checkpoint(tmp_path)
+    _forbid_real_hf_cache(monkeypatch)
     result, backend = load_ft_backend(
-        "amali_ft_v0", registry_path=registry_path, load_model=False
+        "amali_ft_v0",
+        registry_path=registry_path,
+        cache_dir=_isolated_hf_cache(tmp_path),
+        load_model=False,
     )
-    # Integrity passes; deps/weights gates decide the rest on this machine.
-    assert result.status in ("PASS", "DEPS_MISSING", "MODEL_NOT_AVAILABLE")
+    # Integrity passes; the isolated cache is empty, so the only honest
+    # outcomes are the deps gate or missing base weights — the machine's
+    # real snapshot state cannot leak in.
+    assert result.status in ("DEPS_MISSING", "MODEL_NOT_AVAILABLE")
     assert result.status != "CHECKPOINT_TAMPERED"
+    assert backend is None
+
+
+@pytest.mark.skipif(
+    not _LOADER_DEPS_PRESENT,
+    reason="torch/transformers/peft not installed; loader deps gate closes first",
+)
+def test_intact_checkpoint_passes_with_matching_isolated_snapshot(
+    tmp_path, monkeypatch
+):
+    registry_path, manifest = _fake_checkpoint(tmp_path)
+    _forbid_real_hf_cache(monkeypatch)
+    cache = _isolated_hf_cache(tmp_path, manifest.base_model_revision)
+    result, backend = load_ft_backend(
+        "amali_ft_v0",
+        registry_path=registry_path,
+        cache_dir=cache,
+        load_model=False,
+    )
+    assert result.status == "PASS"
+    assert backend is None  # load_model=False never touches torch
+
+
+@pytest.mark.skipif(
+    not _LOADER_DEPS_PRESENT,
+    reason="torch/transformers/peft not installed; loader deps gate closes first",
+)
+def test_loader_still_refuses_revision_mismatch(tmp_path, monkeypatch):
+    registry_path, _ = _fake_checkpoint(tmp_path)
+    _forbid_real_hf_cache(monkeypatch)
+    # cached snapshot exists, but at a different revision than the manifest
+    cache = _isolated_hf_cache(tmp_path, "b" * 40)
+    result, backend = load_ft_backend(
+        "amali_ft_v0",
+        registry_path=registry_path,
+        cache_dir=cache,
+        load_model=False,
+    )
+    assert result.status == "REVISION_MISMATCH"
     assert backend is None
 
 
