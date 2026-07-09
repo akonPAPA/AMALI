@@ -64,12 +64,18 @@ control plane. It is **not** a from-scratch model, and no claim about
 GPT/Claude/DeepSeek/GLM/Qwen is made anywhere: external comparisons stay
 `NOT_PROVEN` without stored baselines.
 
-Honest current state: **code-complete**. The local corpus yields fewer
-than 200 approved non-synthetic training examples, training dependencies
-and base weights are owner-install/download actions that have not
-happened, so the pipeline reports `DATASET_NOT_READY` /
-`TRAIN_DEPS_MISSING` / `MODEL_NOT_AVAILABLE` and promotion is
-`NOT_READY`. Nothing is faked.
+Honest current state: the source code supports a real Base Model
+Readiness check (revision pin, snapshot availability, gateway smoke,
+raw/typed gates). On an owner's machine, with the pinned model present
+locally, this repo's owner-local artifacts and evals can prove
+`BASE_MODEL_READY` (verified with `Qwen/Qwen2.5-1.5B-Instruct` at pinned
+revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`). This repository
+does not commit any weights, artifacts, raw data, or owner HF cache —
+readiness must be reproduced locally by each owner. **AMALI-FT-v0**
+itself remains `NOT_READY`: it stays that way until real fine-tune
+training, checkpoint verification, evaluation, safety regression
+testing, and promotion all exist and pass. Nothing is faked, and no
+frontier-superiority, AGI, or ASI claims are made.
 
 Preflight (verify Gate A stability before model work):
 
