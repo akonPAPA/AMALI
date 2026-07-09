@@ -78,6 +78,7 @@ CANONICAL_ARTIFACTS = [
     "training_readiness_report.md",
     "training_readiness_report.json",
     "algorithm_proof_report.md",
+    "gate_b_model_report.json",
     "remaining_risks.md",
 ]
 
@@ -177,14 +178,17 @@ def run_demo(
     repo_root: str | Path = ".",
     output_dir: str | Path | None = None,
     with_local_model: bool = False,
+    model_mode: str = "raw_base",
 ) -> Path:
     """Run Gate A end to end and emit every canonical artifact.
 
+    ``model_mode`` selects the optional Gate B target when
+    ``with_local_model`` is set: ``raw_base`` or ``amali_ft_v0``.
     Returns the artifact directory path.
     """
     root = Path(repo_root)
     command = "python scripts/run_base_ai_gate_demo.py" + (
-        " --with-local-model" if with_local_model else ""
+        f" --with-local-model --model {model_mode}" if with_local_model else ""
     )
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     out = (
@@ -282,12 +286,36 @@ def run_demo(
     availability = check_local_model_availability()
     gate_b_status = availability.status
     gate_b_smoke: dict[str, Any] = {"ran": False}
-    if with_local_model and availability.status == "AVAILABLE":
+    gate_b_model: dict[str, Any] = {
+        "requested": with_local_model,
+        "model_mode": model_mode if with_local_model else None,
+        "status": "NOT_RUN",
+        "detail": [],
+    }
+    if with_local_model and model_mode == "amali_ft_v0":
+        gate_b_model = _gate_b_ft_probe()
+        gate_b_smoke = {
+            "ran": gate_b_model["status"] == "PASS",
+            "reason": gate_b_model["status"],
+        }
+    elif with_local_model and availability.status == "AVAILABLE":
         gate_b_smoke = _gate_b_smoke(availability.model_id)
+        gate_b_model = {
+            "requested": True,
+            "model_mode": model_mode,
+            "status": "PASS" if gate_b_smoke.get("ran") else "SKIPPED",
+            "detail": [gate_b_smoke],
+        }
     elif with_local_model:
         gate_b_smoke = {
             "ran": False,
             "reason": availability.status,
+        }
+        gate_b_model = {
+            "requested": True,
+            "model_mode": model_mode,
+            "status": availability.status,
+            "detail": ["no silent download; owner action required"],
         }
 
     # ---- chain integrity -----------------------------------------------------
@@ -600,6 +628,25 @@ GLM, DeepSeek, Claude, or any external system is made or implied
         ),
     )
 
+    # gate_b_model_report.json ------------------------------------------------------------
+    _write_json(
+        out / "gate_b_model_report.json",
+        _envelope(
+            command,
+            gate_b_model["status"],
+            metrics={
+                "requested": gate_b_model["requested"],
+                "model_mode": gate_b_model["model_mode"] or "none",
+            },
+            decisions=[gate_b_model],
+            risks=[
+                "Gate B is optional and owner-gated; a missing model, "
+                "adapter, or dependency is an honest typed status, never "
+                "a Gate A failure and never a silent download"
+            ],
+        ),
+    )
+
     # debate_report.json -----------------------------------------------------------------------
     debate = ok_run.debate
     _write_json(
@@ -775,6 +822,45 @@ No frontier-superiority claim is made anywhere in this artifact set.
     )
 
     return out
+
+
+def _gate_b_ft_probe() -> dict[str, Any]:
+    """Probe/load the promoted AMALI-FT-v0 adapter, honestly.
+
+    Registry lookup + hash verification first; the model is loaded only
+    when integrity, deps, and local weights all pass. Every failure is a
+    typed status (MODEL_NOT_AVAILABLE / CHECKPOINT_TAMPERED /
+    DEPS_MISSING), never a crash and never a download.
+    """
+    result: dict[str, Any] = {
+        "requested": True,
+        "model_mode": "amali_ft_v0",
+        "status": "NOT_RUN",
+        "detail": [],
+    }
+    try:
+        from amali.eval.suite import EvalItem, EvalSection
+        from amali.model_gateway.adapter_loader import load_ft_backend
+
+        load_result, backend = load_ft_backend("amali_ft_v0")
+        result["status"] = load_result.status
+        result["detail"] = list(load_result.reasons)
+        if backend is not None:
+            smoke_item = EvalItem(
+                item_id="gate_b_smoke",
+                section=EvalSection.HONEST_UNKNOWN,
+                prompt="Reply with the single word: ready",
+                expected_behavior="responds",
+                expected_status="SUCCESS",
+            )
+            response = backend.respond(smoke_item)
+            result["detail"].append(
+                {"smoke_output_non_empty": bool(response.text.strip())}
+            )
+    except Exception as exc:  # noqa: BLE001 - Gate B must never crash Gate A
+        result["status"] = "SKIPPED"
+        result["detail"] = [f"probe error: {str(exc)[:200]}"]
+    return result
 
 
 def _gate_b_smoke(model_id: str) -> dict[str, Any]:
