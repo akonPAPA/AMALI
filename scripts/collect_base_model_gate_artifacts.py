@@ -27,9 +27,17 @@ from amali.model_gateway.base_model_allowlist import get_allowlist  # noqa: E402
 
 ARTIFACT_BASE = REPO_ROOT / "artifacts" / "base_model_gate"
 PREFLIGHT_BASE = REPO_ROOT / "artifacts" / "base_model_gate_preflight"
+FT_V0_BASE = REPO_ROOT / "artifacts" / "amali_ft_v0"
+READINESS_BASE = REPO_ROOT / "artifacts" / "base_model_readiness"
 
 CANONICAL = [
     "preflight_report.json",
+    "sourcepack_validation_report.json",
+    "sourcepack_validation_report.md",
+    "training_env_report.json",
+    "training_fallback_plan.json",
+    "security_validation_report.json",
+    "security_validation_report.md",
     "eval_suite_freeze_report.json",
     "eval_suite_freeze_report.md",
     "dataset_build_report.json",
@@ -46,11 +54,19 @@ CANONICAL = [
     "training_run_report.md",
     "checkpoint_registry.json",
     "checkpoint_integrity_report.json",
+    "base_model_revision_pin_report.json",
+    "model_gateway_smoke_report.json",
+    "base_model_readiness_report.json",
+    "base_model_readiness_report.md",
+    "local_chat_smoke_report.json",
     "eval_report_raw_base.json",
     "eval_report_raw_base.md",
+    "eval_report_wrapped_raw_base.json",
     "eval_report_amali_ft.json",
     "eval_report_amali_wrapped_ft.json",
     "safety_regression_report.json",
+    "comparison_base_readiness.json",
+    "comparison_base_readiness.md",
     "comparison_three_way.json",
     "comparison_three_way.md",
     "promotion_report.json",
@@ -85,7 +101,7 @@ def _repo_ref() -> str:
 
 def _newest(name: str) -> Path | None:
     candidates: list[Path] = []
-    for base in (ARTIFACT_BASE, PREFLIGHT_BASE):
+    for base in (ARTIFACT_BASE, PREFLIGHT_BASE, FT_V0_BASE, READINESS_BASE):
         if base.is_dir():
             candidates.extend(base.glob(f"*/{name}"))
     if not candidates:

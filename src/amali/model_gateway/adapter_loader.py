@@ -21,7 +21,11 @@ from pydantic import BaseModel, Field
 
 from amali.eval.suite import EvalItem, EvalResponse
 from amali.eval.model_eval import parse_model_text
-from amali.model_gateway.availability import check_local_model_availability
+from amali.model_gateway.availability import (
+    STATUS_AVAILABLE,
+    check_model_snapshot,
+)
+from amali.model_gateway.base_model_allowlist import check_model_allowed
 from amali.training.registry import (
     DEFAULT_REGISTRY_PATH,
     load_registry,
@@ -50,7 +54,9 @@ class AdapterLoadResult(BaseModel):
 
     model_config = {"extra": "forbid", "protected_namespaces": ()}
 
-    status: str  # PASS | MODEL_NOT_AVAILABLE | CHECKPOINT_TAMPERED | DEPS_MISSING
+    # PASS | POLICY_BLOCKED | MODEL_NOT_AVAILABLE | MODEL_INCOMPLETE
+    # | REVISION_MISMATCH | CHECKPOINT_TAMPERED | DEPS_MISSING
+    status: str
     checkpoint_id: str = ""
     base_model_id: str = ""
     base_model_revision: str = ""
@@ -134,6 +140,18 @@ def load_raw_backend(
     cache_dir: Path | None = None,
 ) -> tuple[AdapterLoadResult, LocalModelBackend | None]:
     """Load the raw base model if deps and local weights exist."""
+    decision = check_model_allowed(model_id, revision=revision)
+    if not decision.allowed:
+        return (
+            AdapterLoadResult(
+                status="POLICY_BLOCKED",
+                base_model_id=model_id,
+                base_model_revision=revision or "",
+                reasons=[f"allowlist refused: {decision.reasons}"],
+            ),
+            None,
+        )
+
     missing = _deps_missing()
     if missing:
         return (
@@ -144,13 +162,14 @@ def load_raw_backend(
             ),
             None,
         )
-    availability = check_local_model_availability(model_id, cache_dir=cache_dir)
-    if availability.status != "AVAILABLE":
+    snapshot = check_model_snapshot(model_id, revision, cache_dir=cache_dir)
+    if snapshot.status != STATUS_AVAILABLE:
         return (
             AdapterLoadResult(
-                status="MODEL_NOT_AVAILABLE",
+                status=snapshot.status,
                 base_model_id=model_id,
-                reasons=[f"availability: {availability.status}"],
+                base_model_revision=revision or "",
+                reasons=snapshot.notes,
             ),
             None,
         )
@@ -209,29 +228,33 @@ def load_ft_backend(
         )
 
     missing = _deps_missing()
-    if missing or importlib.util.find_spec("peft") is None:
+    if importlib.util.find_spec("peft") is None:
+        missing = [*missing, "peft"]
+    if missing:
         return (
             AdapterLoadResult(
                 status="DEPS_MISSING",
                 checkpoint_id=manifest.checkpoint_id,
                 base_model_id=manifest.base_model_id,
                 base_model_revision=manifest.base_model_revision,
-                reasons=[f"missing deps: {missing + ['peft']}"],
+                reasons=[f"missing deps: {missing}"],
             ),
             None,
         )
 
-    availability = check_local_model_availability(
-        manifest.base_model_id, cache_dir=cache_dir
+    snapshot = check_model_snapshot(
+        manifest.base_model_id,
+        manifest.base_model_revision or None,
+        cache_dir=cache_dir,
     )
-    if availability.status != "AVAILABLE":
+    if snapshot.status != STATUS_AVAILABLE:
         return (
             AdapterLoadResult(
-                status="MODEL_NOT_AVAILABLE",
+                status=snapshot.status,
                 checkpoint_id=manifest.checkpoint_id,
                 base_model_id=manifest.base_model_id,
                 base_model_revision=manifest.base_model_revision,
-                reasons=[f"base weights: {availability.status}"],
+                reasons=[f"base weights: {snapshot.status}"] + snapshot.notes,
             ),
             None,
         )

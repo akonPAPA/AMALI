@@ -34,15 +34,17 @@ from amali.model_gateway.base_model_allowlist import (
     check_model_allowed,
     find_entry,
 )
-from amali.training.config import TrainingConfig, estimate_vram_gb
+from amali.training.config import TrainingConfig, estimate_vram_gb, path_is_inside_repo
 from amali.training.contamination import check_contamination
 from amali.training.dataset import MIN_NON_SYNTHETIC, TrainingExample
 from amali.training.registry import (
+    DEFAULT_REGISTRY_PATH,
     CheckpointManifest,
     hash_directory_files,
     register_checkpoint,
 )
 from amali.training.reports import DryRunReport, TrainingRunReport
+from amali.training.sourcepack import SOURCEPACK_ROOT, validate_sourcepack
 
 __all__ = [
     "DATASET_JSONL",
@@ -79,6 +81,14 @@ def _missing_train_deps(method: str) -> list[str]:
     return [m for m in modules if importlib.util.find_spec(m) is None]
 
 
+def _path_is_under(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except (ValueError, OSError):
+        return False
+
+
 def run_dry_run(
     config: TrainingConfig,
     *,
@@ -86,6 +96,8 @@ def run_dry_run(
     dataset_path: Path = DATASET_JSONL,
     cache_dir: Path | None = None,
     min_non_synthetic: int = MIN_NON_SYNTHETIC,
+    sourcepack_root: Path | None = None,
+    registry_path: Path = DEFAULT_REGISTRY_PATH,
 ) -> DryRunReport:
     """Verify every training precondition without touching a GPU."""
     root = Path(repo_root)
@@ -241,6 +253,36 @@ def run_dry_run(
         f"output_dir {config.output_dir} is inside the git repository",
         "point output_dir outside the repo, e.g. D:/AMALI/models/amali_ft_v0",
     )
+
+    # 10. registry outside git ---------------------------------------------------------------------
+    gate(
+        "registry_outside_repo",
+        not path_is_inside_repo(registry_path, root),
+        "NOT_READY",
+        f"checkpoint registry {registry_path} is inside the git repository",
+        "point the registry outside the repo, e.g. D:/AMALI/models/registry/",
+    )
+
+    # 11. sourcepack re-verification --------------------------------------------------------------
+    # Any dataset example built from the raw owner dir must be backed by a
+    # currently-VALID sourcepack; catches post-build tampering. When no
+    # raw-sourced examples exist there is nothing to re-verify.
+    sp_root = Path(sourcepack_root) if sourcepack_root else SOURCEPACK_ROOT
+    raw_sourced = [
+        e for e in examples if _path_is_under(Path(e.source_path), sp_root)
+    ]
+    if raw_sourced:
+        sp_report = validate_sourcepack(sp_root)
+        gate(
+            "sourcepack_valid",
+            sp_report.status == "VALID",
+            "OWNER_DATA_REQUIRED",
+            f"sourcepack validation: {sp_report.status}",
+            "fix the sourcepack and rerun "
+            "scripts/validate_owner_sourcepack.py",
+        )
+    else:
+        checks["sourcepack_valid"] = "NOT_RUN"
 
     return DryRunReport(
         status=status or "DRY_RUN_PASS",
@@ -491,8 +533,26 @@ def _execute_training(
         )
         register_checkpoint(manifest)
     except Exception as exc:  # noqa: BLE001 - real failures must surface, typed
-        report.status = "TRAINING_FAILED"
-        report.risks.append(f"training failed: {type(exc).__name__}: {exc}")
+        is_oom = isinstance(
+            exc, torch.cuda.OutOfMemoryError
+        ) or "out of memory" in str(exc).lower()
+        if is_oom:
+            report.status = "TRAINING_FAILED_OOM"
+            report.risks.append(f"CUDA out of memory: {exc}")
+            report.owner_actions.extend(
+                [
+                    "degradation options (owner picks; nothing is retried "
+                    "silently):",
+                    "  1. reduce max_seq_len 1024 -> 768 -> 512",
+                    "  2. reduce lora_rank 16 -> 8",
+                    "  3. fall back to Qwen/Qwen2.5-0.5B-Instruct",
+                ]
+            )
+        else:
+            report.status = "TRAINING_FAILED"
+            report.risks.append(
+                f"training failed: {type(exc).__name__}: {exc}"
+            )
     finally:
         report.ended_at = _now()
         report.wall_clock_seconds = round(time.monotonic() - started, 2)

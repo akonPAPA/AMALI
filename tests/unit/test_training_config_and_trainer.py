@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from amali.model_gateway.availability import ModelAvailability
-from amali.training.config import TrainingConfig, estimate_vram_gb
+from amali.training.config import TrainingConfig, estimate_vram_gb, path_is_inside_repo
 from amali.training import trainer as trainer_mod
 from amali.training.trainer import (
     build_training_plan,
@@ -130,6 +130,11 @@ def test_output_inside_repo_detected(tmp_path):
     assert outside.output_inside(REPO_ROOT) is False
 
 
+def test_windows_absolute_default_output_not_inside_repo_on_posix_ci():
+    assert path_is_inside_repo("D:/AMALI/models/amali_ft_v0", REPO_ROOT) is False
+    assert path_is_inside_repo("//server/share/amali_ft_v0", REPO_ROOT) is False
+
+
 # --- VRAM heuristic -------------------------------------------------------------
 
 
@@ -166,7 +171,9 @@ def test_feasible_config_passes_dry_run(tmp_path, all_gates_pass):
         _config(tmp_path), repo_root=REPO_ROOT, dataset_path=dataset
     )
     assert report.status == "DRY_RUN_PASS", (report.status, report.reasons)
-    assert all(v == "PASS" for v in report.checks.values())
+    # sourcepack_valid is NOT_RUN when no raw-dir examples exist.
+    assert all(v in ("PASS", "NOT_RUN") for v in report.checks.values())
+    assert report.checks["registry_outside_repo"] == "PASS"
 
 
 def test_small_dataset_refused(tmp_path, all_gates_pass):
@@ -243,6 +250,58 @@ def test_vram_infeasible_refused(tmp_path, all_gates_pass):
         dataset_path=dataset,
     )
     assert report.status == "VRAM_INFEASIBLE"
+
+
+def test_registry_inside_repo_refused(tmp_path, all_gates_pass):
+    dataset = _write_dataset(tmp_path, 220)
+    report = run_dry_run(
+        _config(tmp_path),
+        repo_root=REPO_ROOT,
+        dataset_path=dataset,
+        registry_path=REPO_ROOT / "models" / "registry.json",
+    )
+    assert report.checks["registry_outside_repo"] == "FAIL"
+    assert report.status != "DRY_RUN_PASS"
+
+
+def test_raw_sourced_examples_require_valid_sourcepack(tmp_path, all_gates_pass):
+    # Dataset examples claim to come from the raw owner dir, but no valid
+    # sourcepack exists there -> OWNER_DATA_REQUIRED.
+    raw_root = tmp_path / "raw"
+    raw_root.mkdir()
+    dataset = tmp_path / "train.jsonl"
+    rows = []
+    for i in range(220):
+        rows.append(
+            {
+                "example_id": f"t_{i:04d}",
+                "source_id": f"raw/doc_{i}.md",
+                "source_hash": "a" * 64,
+                "source_path": str(raw_root / f"doc_{i}.md"),
+                "data_class": "internal",
+                "synthetic": False,
+                "instruction": "Restate the passage faithfully.",
+                "input_context": f"Owner passage number {i} about the ledger.",
+                "expected_response": f"Passage {i} restated.",
+                "expected_status": "SUCCESS",
+                "required_citations": [],
+                "forbidden_outputs": [],
+                "behavior_tags": [],
+                "data_wall_decision_id": "decision_x",
+                "content_hash": f"{i:064d}",
+            }
+        )
+    dataset.write_text(
+        "\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8"
+    )
+    report = run_dry_run(
+        _config(tmp_path),
+        repo_root=REPO_ROOT,
+        dataset_path=dataset,
+        sourcepack_root=raw_root,
+    )
+    assert report.checks["sourcepack_valid"] == "FAIL"
+    assert report.status == "OWNER_DATA_REQUIRED"
 
 
 # --- trainer refusals -------------------------------------------------------------

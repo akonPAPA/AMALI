@@ -64,12 +64,18 @@ control plane. It is **not** a from-scratch model, and no claim about
 GPT/Claude/DeepSeek/GLM/Qwen is made anywhere: external comparisons stay
 `NOT_PROVEN` without stored baselines.
 
-Honest current state: **code-complete**. The local corpus yields fewer
-than 200 approved non-synthetic training examples, training dependencies
-and base weights are owner-install/download actions that have not
-happened, so the pipeline reports `DATASET_NOT_READY` /
-`TRAIN_DEPS_MISSING` / `MODEL_NOT_AVAILABLE` and promotion is
-`NOT_READY`. Nothing is faked.
+Honest current state: the source code supports a real Base Model
+Readiness check (revision pin, snapshot availability, gateway smoke,
+raw/typed gates). On an owner's machine, with the pinned model present
+locally, this repo's owner-local artifacts and evals can prove
+`BASE_MODEL_READY` (verified with `Qwen/Qwen2.5-1.5B-Instruct` at pinned
+revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`). This repository
+does not commit any weights, artifacts, raw data, or owner HF cache —
+readiness must be reproduced locally by each owner. **AMALI-FT-v0**
+itself remains `NOT_READY`: it stays that way until real fine-tune
+training, checkpoint verification, evaluation, safety regression
+testing, and promotion all exist and pass. Nothing is faked, and no
+frontier-superiority, AGI, or ASI claims are made.
 
 Preflight (verify Gate A stability before model work):
 
@@ -81,26 +87,40 @@ python scripts/run_base_model_gate_preflight.py  # alias
 Full stage (run these in order when ready):
 
 ```powershell
+# owner data intake (see docs/data/OWNER_SOURCEPACK_GUIDE.md)
+python scripts/validate_owner_sourcepack.py
+
 # eval foundation (frozen before any data/training work)
 python scripts/freeze_eval_suite.py
 python scripts/build_training_dataset.py
 python scripts/check_contamination.py
 
-# feasibility gate (torch-free)
+# environment + feasibility gates (torch only inside the probe)
+python scripts/probe_training_environment.py
 python scripts/train_amali_adapter.py --dry-run
 
 # owner-invoked real path (installs + download are explicit owner actions)
 python -m pip install -e ".[dev,local_llm,train]"
 python scripts/download_model.py --model Qwen/Qwen2.5-1.5B-Instruct --revision <PINNED_REVISION>
-python scripts/train_amali_adapter.py
+python scripts/train_amali_adapter.py --model Qwen/Qwen2.5-1.5B-Instruct --revision <PINNED_REVISION>
+
+# checkpoint integrity
+python scripts/register_checkpoint.py
+python scripts/verify_checkpoint.py
 
 # evaluation / promotion / comparison
 python scripts/evaluate_model.py --model raw_base
+python scripts/evaluate_model.py --model amali_wrapped_raw_base
 python scripts/evaluate_model.py --model amali_ft_v0
 python scripts/evaluate_model.py --model amali_wrapped_ft_v0
 python scripts/promote_model.py amali_ft_v0
-python scripts/compare_models.py --suite frozen_base_model_gate
+python scripts/compare_models.py --mode base_readiness   # raw_base vs amali_wrapped_raw_base (no FT needed)
+python scripts/compare_models.py --mode ft_promotion     # strict three-way; refuses missing amali_wrapped_ft_v0
 python scripts/run_base_ai_gate_demo.py --with-local-model --model amali_ft_v0
+
+# card + security validation
+python scripts/generate_model_card.py
+python scripts/security_validate_amali_ft_v0.py
 ```
 
 Every command exits nonzero on real failure, emits a typed artifact
