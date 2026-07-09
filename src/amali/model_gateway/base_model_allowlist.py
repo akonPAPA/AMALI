@@ -20,9 +20,18 @@ __all__ = [
     "find_entry",
     "check_model_allowed",
     "AllowlistDecision",
+    "ROLE_TRAIN_EVAL",
+    "ROLE_FALLBACK",
+    "ROLE_EVAL_ONLY",
 ]
 
 FLOATING_REVISIONS = ("", "main", "latest", "HEAD")
+
+# Roles a base model can hold. Only train_eval models may anchor training;
+# fallback requires explicit owner fallback approval; eval_only never trains.
+ROLE_TRAIN_EVAL = "train_eval"
+ROLE_FALLBACK = "fallback"
+ROLE_EVAL_ONLY = "eval_only"
 
 
 class BaseModelEntry(BaseModel):
@@ -32,6 +41,7 @@ class BaseModelEntry(BaseModel):
 
     model_id: str
     allowed_revision: str  # pinned commit/tag; "main" means not yet pinned
+    role: str = ROLE_TRAIN_EVAL  # train_eval | fallback | eval_only
     license: str
     parameter_count: str
     expected_disk_gb: float
@@ -50,6 +60,7 @@ DEFAULT_ALLOWLIST: list[BaseModelEntry] = [
     BaseModelEntry(
         model_id="Qwen/Qwen2.5-1.5B-Instruct",
         allowed_revision="main",
+        role=ROLE_TRAIN_EVAL,
         license="Apache-2.0",
         parameter_count="1.5B",
         expected_disk_gb=3.1,
@@ -65,6 +76,7 @@ DEFAULT_ALLOWLIST: list[BaseModelEntry] = [
     BaseModelEntry(
         model_id="Qwen/Qwen2.5-3B-Instruct",
         allowed_revision="main",
+        role=ROLE_EVAL_ONLY,
         license="Qwen Research License",
         parameter_count="3B",
         expected_disk_gb=6.2,
@@ -80,6 +92,7 @@ DEFAULT_ALLOWLIST: list[BaseModelEntry] = [
     BaseModelEntry(
         model_id="Qwen/Qwen2.5-0.5B-Instruct",
         allowed_revision="main",
+        role=ROLE_FALLBACK,
         license="Apache-2.0",
         parameter_count="0.5B",
         expected_disk_gb=1.0,

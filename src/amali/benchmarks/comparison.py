@@ -215,6 +215,36 @@ def three_way_comparison(
             notes=[f"missing eval reports: {missing}"],
         )
 
+    # Consistency wall: reports are only comparable when they measured the
+    # same frozen suite on the same model at the same pinned revision. A
+    # disagreement is a FAIL, never a silently mixed comparison.
+    mismatches: list[str] = []
+    usable_reports = [
+        (mode, report)
+        for mode, report in (
+            ("raw_base", raw_base),
+            ("amali_wrapped_raw_base", wrapped_raw),
+            ("amali_wrapped_ft_v0", wrapped_ft),
+            ("amali_ft_v0_unwrapped", ft_unwrapped),
+        )
+        if usable(report)
+    ]
+    for field in ("suite_hash", "model_id", "revision"):
+        values = {
+            mode: getattr(report, field, "") for mode, report in usable_reports
+        }
+        distinct = {v for v in values.values() if v}
+        if len(distinct) > 1:
+            mismatches.append(f"{field} differs across reports: {values}")
+    if mismatches:
+        return ThreeWayComparison(
+            status="FAIL",
+            suite_hash=suite_hash,
+            claim="",
+            notes=mismatches
+            + ["re-run every eval on the same suite, model, and revision"],
+        )
+
     metrics: dict[str, dict[str, float]] = {}
     for mode, report in (
         ("raw_base", raw_base),

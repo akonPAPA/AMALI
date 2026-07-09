@@ -229,7 +229,13 @@ class ModelEvalReport(BaseModel):
     model_config = {"extra": "forbid", "protected_namespaces": ()}
 
     mode: str
-    status: str  # PASS | MODEL_NOT_AVAILABLE | DEPS_MISSING | NOT_RUN
+    # PASS | MODEL_NOT_AVAILABLE | MODEL_INCOMPLETE | REVISION_MISMATCH
+    # | REVISION_NOT_PINNED | DEPS_MISSING | NOT_RUN
+    status: str
+    model_id: str = ""
+    revision: str = ""
+    local_files_only: bool = True
+    decoding_config: dict[str, object] = Field(default_factory=dict)
     suite_hash: str = ""
     scorer_hash: str = ""
     item_count: int = 0
@@ -246,12 +252,24 @@ def _section_score(scores: list[EvalItemScore], section: EvalSection) -> float:
     return round(sum(section_scores) / len(section_scores), 6)
 
 
+# One decoding policy for every local model mode: greedy, reproducible.
+DEFAULT_DECODING_CONFIG: dict[str, object] = {
+    "do_sample": False,
+    "temperature": None,
+    "top_p": None,
+    "max_new_tokens": 256,
+}
+
+
 def evaluate_model(
     *,
     mode: str,
     items: list[EvalItem],
     backend: ModelBackend,
     suite_hash: str = "",
+    model_id: str = "",
+    revision: str = "",
+    local_files_only: bool = True,
 ) -> ModelEvalReport:
     """Score ``backend`` over the frozen items with the frozen scorer."""
     if mode not in MODEL_MODES:
@@ -332,6 +350,10 @@ def evaluate_model(
     return ModelEvalReport(
         mode=mode,
         status="PASS",
+        model_id=model_id,
+        revision=revision,
+        local_files_only=local_files_only,
+        decoding_config=dict(DEFAULT_DECODING_CONFIG),
         suite_hash=suite_hash,
         scorer_hash=scorer_hash(),
         item_count=len(items),

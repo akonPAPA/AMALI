@@ -147,6 +147,20 @@ def main() -> int:
     files, total_bytes = _file_records(snapshot)
     entry = find_entry(args.model)
 
+    # Verify what actually landed on disk — a config-only or tokenizer-only
+    # snapshot must never be recorded as ready for offline use.
+    from amali.model_gateway.availability import (  # noqa: E402
+        STATUS_AVAILABLE,
+        check_model_snapshot,
+    )
+
+    verification = check_model_snapshot(
+        args.model,
+        revision if promotable else None,
+        cache_dir=snapshot.parents[2] if len(snapshot.parents) >= 3 else None,
+    )
+    local_files_only_ready = verification.status == STATUS_AVAILABLE
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     out_dir = REPO_ROOT / "artifacts" / "base_model_gate" / timestamp
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -158,13 +172,21 @@ def main() -> int:
             f"python scripts/download_model.py --model {args.model}"
             + (f" --revision {revision}" if revision else "")
         ),
-        "status": "PASS",
+        "status": "DOWNLOAD_COMPLETE" if local_files_only_ready else "DOWNLOAD_FAILED",
         "metrics": {
             "model_id": args.model,
             "revision": revision or "main",
             "revision_pinned": promotable,
-            "promotion_eligible": promotable,
-            "owner_action_required": not promotable,
+            "promotion_eligible": promotable and local_files_only_ready,
+            "owner_action_required": not (promotable and local_files_only_ready),
+            "weight_files_detected": verification.weight_files_detected,
+            "tokenizer_files_detected": verification.tokenizer_files_detected,
+            "config_files_detected": verification.config_files_detected,
+            "local_files_only_ready": local_files_only_ready,
+            "hash_strategy": (
+                f"sha256 for files <= {HASH_MAX_BYTES} bytes; "
+                "size-only above (recorded per file)"
+            ),
             # explicit owner download is the single sanctioned network
             # moment; every later load must be local_files_only=True.
             "local_files_only": False,
@@ -197,8 +219,15 @@ def main() -> int:
     print(f"Files: {len(files)}, disk: {total_bytes / 1e9:.2f} GB")
     if not promotable:
         print("NOTE: floating revision -> NON_PROMOTABLE snapshot.")
+    if not local_files_only_ready:
+        print(
+            f"WARNING: snapshot verification is {verification.status}; the "
+            "download is NOT usable offline yet (weights/tokenizer/config "
+            "incomplete).",
+            file=sys.stderr,
+        )
     print(f"Manifest: {out_dir / 'model_download_manifest.json'}")
-    return 0
+    return 0 if local_files_only_ready else 1
 
 
 if __name__ == "__main__":
