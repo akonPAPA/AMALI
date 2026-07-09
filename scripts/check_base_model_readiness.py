@@ -117,7 +117,9 @@ def main() -> int:
         wrapped_eval_status=_latest_status(
             "eval_report_wrapped_raw_base.json", GATE_BASE
         ),
-        comparison_status=_latest_status("comparison_three_way.json", GATE_BASE),
+        comparison_status=_latest_status(
+            "comparison_base_readiness.json", GATE_BASE
+        ),
         security_validation_status=_latest_status(
             "security_validation_report.json", FT_BASE, GATE_BASE
         ),

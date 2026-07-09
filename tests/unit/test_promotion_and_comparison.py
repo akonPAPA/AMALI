@@ -6,6 +6,7 @@ import pytest
 
 from amali.benchmarks.comparison import (
     FORBIDDEN_CLAIM_MARKERS,
+    base_readiness_comparison,
     three_way_comparison,
 )
 from amali.eval.model_eval import ModelEvalReport
@@ -192,6 +193,18 @@ def test_not_improved_candidate_makes_no_improvement_claim():
     assert "did not improve" in comparison.claim
 
 
+def test_ft_promotion_comparison_still_refuses_missing_wrapped_ft():
+    # both base sides PASS; the FT comparison must still be NOT_RUN
+    comparison = three_way_comparison(
+        raw_base=_report("raw_base", RAW_METRICS),
+        wrapped_raw=_report("amali_wrapped_raw_base", BETTER_METRICS),
+        wrapped_ft=None,
+    )
+    assert comparison.status == "NOT_RUN"
+    assert any("amali_wrapped_ft_v0" in note for note in comparison.notes)
+    assert comparison.claim == ""
+
+
 def test_external_comparison_stays_not_proven():
     comparison = three_way_comparison(
         raw_base=_report("raw_base", RAW_METRICS),
@@ -200,3 +213,61 @@ def test_external_comparison_stays_not_proven():
     )
     assert comparison.external_status == "NOT_PROVEN"
     assert any("NOT_PROVEN" in note for note in comparison.notes)
+
+
+# --- base readiness comparison ------------------------------------------------
+
+
+def test_base_comparison_passes_with_raw_and_wrapped_raw_only():
+    comparison = base_readiness_comparison(
+        raw_base=_report("raw_base", RAW_METRICS),
+        wrapped_raw=_report("amali_wrapped_raw_base", BETTER_METRICS),
+        suite_hash="abc",
+    )
+    assert comparison.status == "PASS"
+    assert set(comparison.metrics_by_mode) == {
+        "raw_base",
+        "amali_wrapped_raw_base",
+    }
+    lowered = comparison.claim.lower()
+    assert not any(marker in lowered for marker in FORBIDDEN_CLAIM_MARKERS)
+    assert comparison.external_status == "NOT_PROVEN"
+
+
+def test_base_comparison_never_requires_wrapped_ft():
+    # no FT report exists anywhere, and nothing asks for one
+    comparison = base_readiness_comparison(
+        raw_base=_report("raw_base", RAW_METRICS),
+        wrapped_raw=_report("amali_wrapped_raw_base", BETTER_METRICS),
+    )
+    assert comparison.status == "PASS"
+    assert "amali_wrapped_ft_v0" not in str(comparison.metrics_by_mode)
+    assert not any("missing" in note for note in comparison.notes)
+
+
+def test_base_comparison_missing_wrapped_raw_is_not_run():
+    comparison = base_readiness_comparison(
+        raw_base=_report("raw_base", RAW_METRICS),
+        wrapped_raw=None,
+    )
+    assert comparison.status == "NOT_RUN"
+    assert comparison.claim == ""
+    assert any("amali_wrapped_raw_base" in note for note in comparison.notes)
+
+
+def test_base_comparison_missing_raw_base_is_not_run():
+    comparison = base_readiness_comparison(
+        raw_base=None,
+        wrapped_raw=_report("amali_wrapped_raw_base", BETTER_METRICS),
+    )
+    assert comparison.status == "NOT_RUN"
+    assert any("raw_base" in note for note in comparison.notes)
+
+
+def test_base_comparison_not_improved_makes_no_improvement_claim():
+    comparison = base_readiness_comparison(
+        raw_base=_report("raw_base", RAW_METRICS),
+        wrapped_raw=_report("amali_wrapped_raw_base", RAW_METRICS),
+    )
+    assert comparison.status == "PASS"
+    assert "did not improve" in comparison.claim

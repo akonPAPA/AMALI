@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from amali.benchmarks.comparison import three_way_comparison
+from amali.benchmarks.comparison import (
+    base_readiness_comparison,
+    three_way_comparison,
+)
 from amali.eval.model_eval import (
     FakeDeterministicBackend,
     ModelEvalReport,
@@ -113,6 +116,26 @@ def test_legacy_reports_without_identity_still_compare():
         raw_base=_report("raw_base", model_id="", revision=""),
         wrapped_raw=None,
         wrapped_ft=_report("amali_wrapped_ft_v0", model_id="", revision=""),
+    )
+    assert comparison.status == "PASS"
+
+
+def test_base_comparison_fails_on_revision_mismatch():
+    comparison = base_readiness_comparison(
+        raw_base=_report("raw_base"),
+        wrapped_raw=_report("amali_wrapped_raw_base", revision=REV_B),
+        suite_hash="suite_x",
+    )
+    assert comparison.status == "FAIL"
+    assert any("revision" in note for note in comparison.notes)
+    assert comparison.claim == ""
+
+
+def test_base_comparison_passes_on_consistent_identity():
+    comparison = base_readiness_comparison(
+        raw_base=_report("raw_base"),
+        wrapped_raw=_report("amali_wrapped_raw_base"),
+        suite_hash="suite_x",
     )
     assert comparison.status == "PASS"
 

@@ -108,7 +108,8 @@ python scripts/evaluate_model.py --model amali_wrapped_raw_base
 python scripts/evaluate_model.py --model amali_ft_v0
 python scripts/evaluate_model.py --model amali_wrapped_ft_v0
 python scripts/promote_model.py amali_ft_v0
-python scripts/compare_models.py --suite frozen_base_model_gate
+python scripts/compare_models.py --mode base_readiness   # raw_base vs amali_wrapped_raw_base (no FT needed)
+python scripts/compare_models.py --mode ft_promotion     # strict three-way; refuses missing amali_wrapped_ft_v0
 python scripts/run_base_ai_gate_demo.py --with-local-model --model amali_ft_v0
 
 # card + security validation

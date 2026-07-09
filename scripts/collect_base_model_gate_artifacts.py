@@ -65,6 +65,8 @@ CANONICAL = [
     "eval_report_amali_ft.json",
     "eval_report_amali_wrapped_ft.json",
     "safety_regression_report.json",
+    "comparison_base_readiness.json",
+    "comparison_base_readiness.md",
     "comparison_three_way.json",
     "comparison_three_way.md",
     "promotion_report.json",

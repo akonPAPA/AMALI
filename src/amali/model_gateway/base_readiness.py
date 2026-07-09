@@ -137,11 +137,15 @@ def decide_base_model_readiness(
         # A FAIL here means the eval reports disagree on suite/model/revision.
         status = STATUS_NOT_READY
         reasons.append(f"comparison: {inputs.comparison_status}")
-        owner_actions.append("python scripts/compare_models.py")
+        owner_actions.append(
+            "python scripts/compare_models.py --mode base_readiness"
+        )
     elif inputs.comparison_status == "NOT_RUN":
         status = STATUS_NOT_READY
         reasons.append("raw vs wrapped comparison report missing")
-        owner_actions.append("python scripts/compare_models.py")
+        owner_actions.append(
+            "python scripts/compare_models.py --mode base_readiness"
+        )
     elif inputs.security_validation_status != "PASS":
         status = STATUS_SECURITY_FAILED
         reasons.append(
