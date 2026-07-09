@@ -36,7 +36,39 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from amali.model_gateway.base_model_allowlist import (  # noqa: E402
     FLOATING_REVISIONS,
     check_model_allowed,
+    find_entry,
 )
+
+# Files above this size are recorded size-only; hashing multi-GB shards on
+# every download is not worth the wall-clock.
+HASH_MAX_BYTES = 256 * 1024 * 1024
+
+
+def _file_records(snapshot: Path) -> tuple[list[dict], int]:
+    import hashlib
+
+    records: list[dict] = []
+    total = 0
+    for path in sorted(snapshot.rglob("*")):
+        if not path.is_file():
+            continue
+        size = path.stat().st_size
+        total += size
+        record = {
+            "path": str(path.relative_to(snapshot)).replace("\\", "/"),
+            "size_bytes": size,
+        }
+        if size <= HASH_MAX_BYTES:
+            digest = hashlib.sha256()
+            with path.open("rb") as handle:
+                for block in iter(lambda: handle.read(1 << 20), b""):
+                    digest.update(block)
+            record["sha256"] = digest.hexdigest()
+        else:
+            record["sha256"] = None
+            record["hash_skipped"] = "file larger than hash budget"
+        records.append(record)
+    return records, total
 
 
 def _now() -> str:
@@ -111,6 +143,10 @@ def main() -> int:
 
     path = snapshot_download(repo_id=args.model, revision=revision)
 
+    snapshot = Path(path)
+    files, total_bytes = _file_records(snapshot)
+    entry = find_entry(args.model)
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     out_dir = REPO_ROOT / "artifacts" / "base_model_gate" / timestamp
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -127,13 +163,30 @@ def main() -> int:
             "model_id": args.model,
             "revision": revision or "main",
             "revision_pinned": promotable,
-            "local_path": str(path),
+            "promotion_eligible": promotable,
+            "owner_action_required": not promotable,
+            # explicit owner download is the single sanctioned network
+            # moment; every later load must be local_files_only=True.
+            "local_files_only": False,
+            "cache_dir": str(snapshot.parents[2])
+            if len(snapshot.parents) >= 3
+            else str(snapshot.parent),
+            "local_path": str(snapshot),
+            "license": entry.license if entry else "unknown",
+            "disk_bytes": total_bytes,
+            "disk_estimate_gb": round(total_bytes / 1e9, 2),
+            "file_count": len(files),
         },
+        "files": files,
         "decisions": [decision.model_dump(mode="json")],
         "risks": (
             []
             if promotable
-            else ["floating revision: this snapshot cannot anchor promotion"]
+            else [
+                "floating revision: this snapshot is NON_PROMOTABLE; "
+                "re-download with --revision <commit_sha> and pin the "
+                "allowlist entry before promotion"
+            ]
         ),
     }
     (out_dir / "model_download_manifest.json").write_text(
@@ -141,6 +194,9 @@ def main() -> int:
     )
 
     print(f"Done. Cached at: {path}")
+    print(f"Files: {len(files)}, disk: {total_bytes / 1e9:.2f} GB")
+    if not promotable:
+        print("NOTE: floating revision -> NON_PROMOTABLE snapshot.")
     print(f"Manifest: {out_dir / 'model_download_manifest.json'}")
     return 0
 
