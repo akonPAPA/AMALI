@@ -24,6 +24,13 @@ local_llm = [
     "transformers>=4.40",
     "accelerate>=0.30",
 ]
+# Adapter training (LoRA/QLoRA) on top of local_llm. Owner-installed only:
+#     python -m pip install -e ".[dev,local_llm,train]"
+train = [
+    "peft>=0.11",
+    "datasets>=2.19",
+    "bitsandbytes>=0.43; platform_system != 'Darwin'",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

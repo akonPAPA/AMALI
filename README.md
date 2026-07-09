@@ -55,6 +55,58 @@ never fails Gate A. No frontier-superiority claims are made anywhere:
 external comparisons are `NOT_PROVEN` without a stored baseline
 (`fixtures/baselines/README.md`).
 
+## Base Model Gate (AMALI-FT-v0 stage)
+
+The Base Model Gate turns the deterministic kernel into an
+owner-controlled path toward **AMALI-FT-v0** — an AMALI-trained adapter
+on top of an owner-approved open base model, governed by the AMALI
+control plane. It is **not** a from-scratch model, and no claim about
+GPT/Claude/DeepSeek/GLM/Qwen is made anywhere: external comparisons stay
+`NOT_PROVEN` without stored baselines.
+
+Honest current state: **code-complete**. The local corpus yields fewer
+than 200 approved non-synthetic training examples, training dependencies
+and base weights are owner-install/download actions that have not
+happened, so the pipeline reports `DATASET_NOT_READY` /
+`TRAIN_DEPS_MISSING` / `MODEL_NOT_AVAILABLE` and promotion is
+`NOT_READY`. Nothing is faked.
+
+Preflight (verify Gate A stability before model work):
+
+```powershell
+python scripts/preflight_base_model_gate.py
+python scripts/run_base_model_gate_preflight.py  # alias
+```
+
+Full stage (run these in order when ready):
+
+```powershell
+# eval foundation (frozen before any data/training work)
+python scripts/freeze_eval_suite.py
+python scripts/build_training_dataset.py
+python scripts/check_contamination.py
+
+# feasibility gate (torch-free)
+python scripts/train_amali_adapter.py --dry-run
+
+# owner-invoked real path (installs + download are explicit owner actions)
+python -m pip install -e ".[dev,local_llm,train]"
+python scripts/download_model.py --model Qwen/Qwen2.5-1.5B-Instruct --revision <PINNED_REVISION>
+python scripts/train_amali_adapter.py
+
+# evaluation / promotion / comparison
+python scripts/evaluate_model.py --model raw_base
+python scripts/evaluate_model.py --model amali_ft_v0
+python scripts/evaluate_model.py --model amali_wrapped_ft_v0
+python scripts/promote_model.py amali_ft_v0
+python scripts/compare_models.py --suite frozen_base_model_gate
+python scripts/run_base_ai_gate_demo.py --with-local-model --model amali_ft_v0
+```
+
+Every command exits nonzero on real failure, emits a typed artifact
+under `artifacts/base_model_gate/<timestamp>/`, never downloads
+silently, and never requires torch for Gate A.
+
 ## Layout
 
 ```text

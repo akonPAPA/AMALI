@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 
 __all__ = ["ModelAvailability", "check_local_model_availability", "DEFAULT_MODEL_ID"]
 
-DEFAULT_MODEL_ID = "Qwen/Qwen2.5-3B-Instruct"
+DEFAULT_MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
 
 STATUS_AVAILABLE = "AVAILABLE"
 STATUS_SKIPPED = "SKIPPED_LOCAL_MODEL_NOT_AVAILABLE"
@@ -85,11 +85,13 @@ def _weights_cached(model_id: str, cache_dir: Path) -> bool:
 
 def check_local_model_availability(
     model_id: str = DEFAULT_MODEL_ID,
+    *,
+    cache_dir: Path | None = None,
 ) -> ModelAvailability:
     """Probe local deps + cache. Never downloads; never fails Gate A."""
     torch_ok = _dep_installed("torch")
     transformers_ok = _dep_installed("transformers")
-    cache_dir = _hf_cache_dir()
+    cache_dir = cache_dir if cache_dir is not None else _hf_cache_dir()
     cached = _weights_cached(model_id, cache_dir)
 
     notes: list[str] = []

@@ -34,7 +34,13 @@ def main() -> int:
     parser.add_argument(
         "--with-local-model",
         action="store_true",
-        help="also probe/smoke the optional local base model (Gate B)",
+        help="also probe/smoke the optional local model (Gate B)",
+    )
+    parser.add_argument(
+        "--model",
+        default="raw_base",
+        choices=["raw_base", "amali_ft_v0"],
+        help="Gate B target: raw base weights or the promoted adapter",
     )
     parser.add_argument(
         "--output-dir",
@@ -47,6 +53,7 @@ def main() -> int:
         repo_root=REPO_ROOT,
         output_dir=args.output_dir,
         with_local_model=args.with_local_model,
+        model_mode=args.model,
     )
 
     emitted = sorted(p.name for p in out.iterdir())
