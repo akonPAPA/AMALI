@@ -93,6 +93,17 @@ def _newest(name: str) -> Path | None:
     return sorted(candidates, key=lambda p: str(p.parent))[-1]
 
 
+def _latest(pattern: str) -> dict | None:
+    """Load the newest artifact matching pattern as JSON, or None."""
+    path = _newest(pattern)
+    if path is None:
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 def _gate_b_from_demo() -> Path | None:
     base = REPO_ROOT / "artifacts" / "base_ai_gate"
     if not base.is_dir():
@@ -166,22 +177,54 @@ def main() -> int:
             continue
         shutil.copy2(source, out_dir / name)
 
-    # remaining_risks.md ------------------------------------------------------
+    # remaining_risks.md — dynamic from latest artifacts -----
+    dataset_report = _latest("*/dataset_build_report.json")
+    dataset_metric = dataset_report.get("metrics", {}) if dataset_report else {}
+    non_synthetic_count = dataset_metric.get("non_synthetic_count", 0)
+    min_required = dataset_metric.get("min_required_non_synthetic", 200)
+    dataset_status = (
+        f"{non_synthetic_count} approved non-synthetic examples < {min_required} floor -> "
+        f"DATASET_NOT_READY"
+        if non_synthetic_count < min_required
+        else f"{non_synthetic_count} non-synthetic examples >= {min_required} floor -> READY"
+    )
+
+    avail = availability
+    train_deps_line = (
+        "- training deps installed: torch, transformers, peft, datasets, "
+        "accelerate, bitsandbytes ready.\n"
+        if avail.torch_installed and avail.transformers_installed
+        else (
+            "- training deps: transformers/peft/datasets/accelerate/bitsandbytes "
+            "not installed. Owner action: "
+            'python -m pip install -e ".[dev,local_llm,train]".\n'
+        )
+    )
+    weights_line = (
+        f"- base weights: {avail.model_id} locally cached; "
+        "Gate B ready to smoke-test offline.\n"
+        if avail.weights_cached_locally
+        else (
+            "- base weights: no local snapshot. Owner action: "
+            "python scripts/download_model.py --model "
+            "Qwen/Qwen2.5-1.5B-Instruct --revision <PINNED_REVISION>.\n"
+        )
+    )
+
     (out_dir / "remaining_risks.md").write_text(
         "# Remaining Risks — Base Model Gate\n\n"
         "Honest current state: the Base Model Gate is **code-complete**; "
         "AMALI-FT-v0 does **not** exist yet.\n\n"
-        "- dataset: 89 approved non-synthetic examples < 200 floor -> "
-        "DATASET_NOT_READY. Owner action: add approved local source "
-        "material under D:/AMALI/data/raw/ and rerun "
-        "scripts/build_training_dataset.py.\n"
-        "- training deps: transformers/peft/datasets/accelerate/bitsandbytes "
-        "not installed. Owner action: "
-        'python -m pip install -e ".[dev,local_llm,train]".\n'
-        "- base weights: no local snapshot. Owner action: "
-        "python scripts/download_model.py --model "
-        "Qwen/Qwen2.5-1.5B-Instruct --revision <PINNED_REVISION>.\n"
-        "- revision: no pinned base model revision yet; promotion refuses "
+        + f"- dataset: {dataset_status}. "
+        + (
+            "Owner action: add approved local source material under "
+            "D:/AMALI/data/raw/ and rerun scripts/build_training_dataset.py.\n"
+            if non_synthetic_count < min_required
+            else ""
+        )
+        + train_deps_line
+        + weights_line
+        + "- revision: no pinned base model revision yet; promotion refuses "
         "floating 'main' by design.\n"
         "- raw base / FT / wrapped-FT evals: not runnable until deps and "
         "weights exist; reports carry DEPS_MISSING / MODEL_NOT_AVAILABLE.\n"

@@ -71,6 +71,15 @@ happened, so the pipeline reports `DATASET_NOT_READY` /
 `TRAIN_DEPS_MISSING` / `MODEL_NOT_AVAILABLE` and promotion is
 `NOT_READY`. Nothing is faked.
 
+Preflight (verify Gate A stability before model work):
+
+```powershell
+python scripts/preflight_base_model_gate.py
+python scripts/run_base_model_gate_preflight.py  # alias
+```
+
+Full stage (run these in order when ready):
+
 ```powershell
 # eval foundation (frozen before any data/training work)
 python scripts/freeze_eval_suite.py
