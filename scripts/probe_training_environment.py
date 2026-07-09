@@ -60,15 +60,28 @@ def _installed(name: str) -> bool:
         return False
 
 
-def _importable(name: str) -> bool:
-    """Some packages (bitsandbytes on Windows) install but fail to import."""
-    if not _installed(name):
+def _bitsandbytes_usable() -> bool:
+    """True only when bitsandbytes can actually run its native kernels.
+
+    On Windows the wheel can install and even import cleanly while the
+    CUDA binary for the local toolkit version is absent; bitsandbytes then
+    swallows the load error and exposes a mock/None library object. QLoRA
+    with that state fails at first quantized op — so it counts as
+    unavailable here. No fake QLoRA.
+    """
+    if not _installed("bitsandbytes"):
         return False
     try:
-        __import__(name)
-        return True
+        import bitsandbytes  # noqa: F401
+        from bitsandbytes.cextension import lib
     except Exception:  # noqa: BLE001 - any import failure means unusable
         return False
+    if lib is None:
+        return False
+    # newer versions swap in an error-handler mock when the binary is missing
+    if "mock" in type(lib).__name__.lower() or "error" in type(lib).__name__.lower():
+        return False
+    return True
 
 
 def gather_probe() -> EnvProbe:
@@ -105,7 +118,7 @@ def gather_probe() -> EnvProbe:
         peft_installed=_installed("peft"),
         datasets_installed=_installed("datasets"),
         accelerate_installed=_installed("accelerate"),
-        bitsandbytes_installed=_importable("bitsandbytes"),
+        bitsandbytes_installed=_bitsandbytes_usable(),
         huggingface_hub_installed=_installed("huggingface_hub"),
     )
 

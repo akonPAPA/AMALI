@@ -27,9 +27,16 @@ from amali.model_gateway.base_model_allowlist import get_allowlist  # noqa: E402
 
 ARTIFACT_BASE = REPO_ROOT / "artifacts" / "base_model_gate"
 PREFLIGHT_BASE = REPO_ROOT / "artifacts" / "base_model_gate_preflight"
+FT_V0_BASE = REPO_ROOT / "artifacts" / "amali_ft_v0"
 
 CANONICAL = [
     "preflight_report.json",
+    "sourcepack_validation_report.json",
+    "sourcepack_validation_report.md",
+    "training_env_report.json",
+    "training_fallback_plan.json",
+    "security_validation_report.json",
+    "security_validation_report.md",
     "eval_suite_freeze_report.json",
     "eval_suite_freeze_report.md",
     "dataset_build_report.json",
@@ -85,7 +92,7 @@ def _repo_ref() -> str:
 
 def _newest(name: str) -> Path | None:
     candidates: list[Path] = []
-    for base in (ARTIFACT_BASE, PREFLIGHT_BASE):
+    for base in (ARTIFACT_BASE, PREFLIGHT_BASE, FT_V0_BASE):
         if base.is_dir():
             candidates.extend(base.glob(f"*/{name}"))
     if not candidates:
