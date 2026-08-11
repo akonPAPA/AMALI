@@ -1,14 +1,5 @@
 ﻿# AMALI Core — Local Kernel
 
-AMALI (Adaptive Multi-Agent LLM Infrastructure) is an **owner-governed,
-evaluation-first, secure model-team AI infrastructure**. This repository
-holds the **local source-of-truth kernel** for *Investor Gate Alpha* — a
-technical proof-of-architecture, not a product.
-
-> This is **not** a B2B SaaS MVP, not a chatbot wrapper, and not a
-> frontend demo. It is a small, typed, auditable kernel that proves a few
-> architectural invariants are real and enforceable in code.
-
 ## What this kernel proves
 
 - **Generated text is not trusted state.** Model output becomes a
@@ -59,10 +50,8 @@ external comparisons are `NOT_PROVEN` without a stored baseline
 
 The Base Model Gate turns the deterministic kernel into an
 owner-controlled path toward **AMALI-FT-v0** — an AMALI-trained adapter
-on top of an owner-approved open base model, governed by the AMALI
-control plane. It is **not** a from-scratch model, and no claim about
-GPT/Claude/DeepSeek/GLM/Qwen is made anywhere: external comparisons stay
-`NOT_PROVEN` without stored baselines.
+on top of an open base model, governed by the AMALI
+control plane
 
 Honest current state: the source code supports a real Base Model
 Readiness check (revision pin, snapshot availability, gateway smoke,
