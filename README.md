@@ -1,186 +1,349 @@
-﻿# AMALI Core — Local Kernel
+# AMALI
 
-## What this kernel proves
+**Evidence-governed runtime and evaluation framework for local LLM and agent systems.**
 
-- **Generated text is not trusted state.** Model output becomes a
-  `ClaimRecord` that starts `UNKNOWN` / `unsupported`.
-- **Claims are explicitly classified** via `EvidenceLevel`
-  (`KNOWN`, `INFERRED`, `UNKNOWN`, `HYPOTHESIS`, `RISK`).
-- **Evidence is explicit** and carries trust, sensitivity, and
-  adversarial-risk metadata (poison / injection).
-- **A claim may only be `KNOWN` with supporting evidence** — enforced by
-  model validation.
-- **Trusted-state mutations are auditable.** Every create/add operation
-  appends to a hash-chained audit ledger.
-- **Audit tampering is detectable.** Mutating any prior event or breaking
-  a hash link makes `verify_chain()` return `False`.
+AMALI explores one core question:
 
-- **Tools run only under least-privilege grants.** The TRPC compiles every
-  tool request into a typed, audited allow/deny/review decision
-  (default-deny; forbidden shell stays forbidden).
-- **Answers come from evidence or are honestly UNKNOWN.** The Base AI Gate
-  pipeline retrieves, quotes, verifies, and arbitrates — an unsupported
-  claim can never produce SUCCESS.
+> **Can AI-generated output be treated as an untrusted proposal that must pass through evidence, policy, verification, and audit boundaries before it can influence trusted state?**
 
-## Base AI Gate (Gate A)
+AMALI is not presented as a new foundation model, AGI system, or frontier-model replacement. The current project focuses on runtime control, evidence handling, secure tool execution, auditability, and reproducible evaluation.
 
-The deterministic, fully local execution path — no network, no GPU, no
-torch, no model weights:
+---
+
+## Why AMALI?
+
+A typical agent pipeline often looks like:
 
 ```text
-TaskRequest -> Data Wall -> TRPC policy -> HER-MoE router -> DWAC plan
-  -> HSGR retrieval -> deterministic answer -> claim extraction
-  -> verifier -> EWA arbitration -> audit -> failure-to-eval
+Prompt
+  ↓
+LLM
+  ↓
+Answer / Tool Call
 ```
 
-Run it (emits the full canonical artifact set under
-`artifacts/base_ai_gate/<timestamp>/`):
+AMALI uses a stricter execution model:
 
-```powershell
+```text
+Input
+  ↓
+Model / Retrieval
+  ↓
+Untrusted Claims
+  ↓
+Evidence
+  ↓
+Verification
+  ↓
+Policy
+  ↓
+Audited Result
+```
+
+The goal is not to make a model "more intelligent" by declaration. The goal is to make AI behavior more constrained, inspectable, and measurable.
+
+---
+
+## Core Properties
+
+### Evidence before trust
+
+Generated statements are represented as typed claims and classified as:
+
+- `KNOWN`
+- `INFERRED`
+- `UNKNOWN`
+- `HYPOTHESIS`
+- `RISK`
+
+A claim cannot become `KNOWN` without supporting evidence.
+
+### Explicit uncertainty
+
+The runtime is allowed to return `UNKNOWN` instead of forcing an unsupported answer.
+
+### Least-privilege tool execution
+
+Tool requests pass through a typed policy boundary:
+
+```text
+Agent Request
+    ↓
+Typed Tool Request
+    ↓
+Policy Evaluation
+    ↓
+ALLOW / DENY / REVIEW
+    ↓
+Executor
+```
+
+The policy model is default-deny.
+
+### Auditable operations
+
+Trusted-state operations append events to a hash-linked audit ledger. Historical tampering can be detected by chain verification.
+
+### Local-first execution
+
+The deterministic AMALI core can run without:
+
+- external APIs
+- cloud services
+- GPU
+- model weights
+- network access
+
+This allows the control plane to be tested independently from model quality.
+
+---
+
+## Current Architecture
+
+```text
+                    Task Request
+                         │
+                         ▼
+                ┌─────────────────┐
+                │ Data Admission  │
+                └────────┬────────┘
+                         │
+                         ▼
+                ┌─────────────────┐
+                │ Policy Boundary │
+                └────────┬────────┘
+                         │
+                         ▼
+                ┌─────────────────┐
+                │ Model/Retrieval │
+                └────────┬────────┘
+                         │
+                         ▼
+                ┌─────────────────┐
+                │ Claim Extraction│
+                └────────┬────────┘
+                         │
+                         ▼
+                ┌─────────────────┐
+                │  Verification   │
+                └────────┬────────┘
+                         │
+               ┌─────────┴─────────┐
+               ▼                   ▼
+        Audited Result         Evaluation
+```
+
+---
+
+## What Is Implemented
+
+| Area | Status |
+|---|---|
+| Typed claim model | Implemented |
+| Evidence records | Implemented |
+| Explicit uncertainty states | Implemented |
+| Hash-linked audit ledger | Implemented |
+| Typed tool permission boundary | Implemented |
+| Deterministic local runtime | Implemented |
+| Local-model gateway | Implemented |
+| Evaluation infrastructure | Implemented |
+| Training pipeline scaffolding | Implemented |
+| Fine-tuned AMALI model | Experimental / not validated |
+| Production readiness | Not claimed |
+
+---
+
+## Base AI Gate
+
+AMALI includes a deterministic execution path that exercises the control plane without requiring an LLM.
+
+Run:
+
+```bash
 python scripts/run_base_ai_gate_demo.py
 ```
 
-Gate B (`--with-local-model`) optionally smokes an owner-downloaded local
-model; a missing model reports `SKIPPED_LOCAL_MODEL_NOT_AVAILABLE` and
-never fails Gate A. No frontier-superiority claims are made anywhere:
-external comparisons are `NOT_PROVEN` without a stored baseline
-(`fixtures/baselines/README.md`).
+Artifacts are emitted under:
 
-## Base Model Gate (AMALI-FT-v0 stage)
-
-The Base Model Gate turns the deterministic kernel into an
-owner-controlled path toward **AMALI-FT-v0** — an AMALI-trained adapter
-on top of an open base model, governed by the AMALI
-control plane
-
-Honest current state: the source code supports a real Base Model
-Readiness check (revision pin, snapshot availability, gateway smoke,
-raw/typed gates). On an owner's machine, with the pinned model present
-locally, this repo's owner-local artifacts and evals can prove
-`BASE_MODEL_READY` (verified with `Qwen/Qwen2.5-1.5B-Instruct` at pinned
-revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`). This repository
-does not commit any weights, artifacts, raw data, or owner HF cache —
-readiness must be reproduced locally by each owner. **AMALI-FT-v0**
-itself remains `NOT_READY`: it stays that way until real fine-tune
-training, checkpoint verification, evaluation, safety regression
-testing, and promotion all exist and pass. Nothing is faked, and no
-frontier-superiority, AGI, or ASI claims are made.
-
-Preflight (verify Gate A stability before model work):
-
-```powershell
-python scripts/preflight_base_model_gate.py
-python scripts/run_base_model_gate_preflight.py  # alias
+```text
+artifacts/base_ai_gate/<timestamp>/
 ```
 
-Full stage (run these in order when ready):
+The Base AI Gate is used to validate:
 
-```powershell
-# owner data intake (see docs/data/OWNER_SOURCEPACK_GUIDE.md)
-python scripts/validate_owner_sourcepack.py
+- claim lifecycle
+- evidence handling
+- policy enforcement
+- verification
+- audit integrity
+- evaluation output
 
-# eval foundation (frozen before any data/training work)
-python scripts/freeze_eval_suite.py
-python scripts/build_training_dataset.py
-python scripts/check_contamination.py
+independently from model quality.
 
-# environment + feasibility gates (torch only inside the probe)
-python scripts/probe_training_environment.py
-python scripts/train_amali_adapter.py --dry-run
+---
 
-# owner-invoked real path (installs + download are explicit owner actions)
-python -m pip install -e ".[dev,local_llm,train]"
-python scripts/download_model.py --model Qwen/Qwen2.5-1.5B-Instruct --revision <PINNED_REVISION>
-python scripts/train_amali_adapter.py --model Qwen/Qwen2.5-1.5B-Instruct --revision <PINNED_REVISION>
+## Local Model Experiments
 
-# checkpoint integrity
-python scripts/register_checkpoint.py
-python scripts/verify_checkpoint.py
+AMALI also supports an explicit owner-controlled local-model path.
 
-# evaluation / promotion / comparison
-python scripts/evaluate_model.py --model raw_base
-python scripts/evaluate_model.py --model amali_wrapped_raw_base
-python scripts/evaluate_model.py --model amali_ft_v0
-python scripts/evaluate_model.py --model amali_wrapped_ft_v0
-python scripts/promote_model.py amali_ft_v0
-python scripts/compare_models.py --mode base_readiness   # raw_base vs amali_wrapped_raw_base (no FT needed)
-python scripts/compare_models.py --mode ft_promotion     # strict three-way; refuses missing amali_wrapped_ft_v0
-python scripts/run_base_ai_gate_demo.py --with-local-model --model amali_ft_v0
+The currently tested readiness target is:
 
-# card + security validation
-python scripts/generate_model_card.py
-python scripts/security_validate_amali_ft_v0.py
+```text
+Qwen/Qwen2.5-1.5B-Instruct
 ```
 
-Every command exits nonzero on real failure, emits a typed artifact
-under `artifacts/base_model_gate/<timestamp>/`, never downloads
-silently, and never requires torch for Gate A.
+Model weights are not bundled with this repository and are never downloaded implicitly.
 
-## Layout
+The planned comparison is:
+
+```text
+A. Raw base model
+
+B. Raw base model + AMALI runtime
+
+C. Fine-tuned adapter + AMALI runtime
+```
+
+---
+
+## AMALI-FT-v0
+
+`AMALI-FT-v0` is the planned first AMALI fine-tuned adapter.
+
+**Current status: NOT READY**
+
+The repository contains infrastructure for:
+
+- base-model readiness checks
+- dataset construction
+- contamination checks
+- training environment validation
+- adapter training
+- checkpoint registration and verification
+- evaluation
+- model comparison
+- promotion
+- model-card generation
+- security validation
+
+AMALI-FT-v0 should not be considered complete until a real training and evaluation cycle has been reproduced successfully.
+
+---
+
+## Research Question
+
+The next major milestone is empirical evaluation:
+
+> **Does evidence-governed execution reduce unsupported claims and successful prompt-injection attacks compared with an unmodified base-model runtime?**
+
+Planned metrics include:
+
+- supported-claim precision
+- unsupported-claim rate
+- abstention accuracy
+- prompt-injection attack success rate
+- secret-leakage rate
+- task-completion rate
+- latency
+- token overhead
+
+No superiority claim is made until these measurements are reproducible.
+
+---
+
+## Repository Structure
 
 ```text
 src/amali/
-  core/          ids + domain errors
-  state/         typed Pydantic state models + in-memory store
-  audit/         hash-chained audit ledger + permission events
-  evidence/      claim construction helpers
-  contracts/     TaskRequest/TaskHandle boundary schemas
-  policy/        TRPC permission compiler + manifests registry
-  tools/         tool requests, grant checks, executor boundary
-  security/      redaction + secret handles
-  data_wall/     flow-aware data admission matrix
-  model_gateway/ model invocation boundary + availability gate
-  router/        HER-MoE system router
-  retrieval/     RICARDO-HSGR deterministic retrieval
-  verifier/      claim extraction + verification
-  arbiter/       RICARDO-EWA + AMALI-UGE
-  activation/    AMALI-DWAC activation planner
-  debate/        rule-based structured debate
-  eval/          RICARDO-FEC failure-to-eval compiler
-  benchmarks/    deterministic benchmark + honest comparison
-  training/      training-readiness manifests + contamination check
-  runtime/       Gate A orchestrator + deterministic answerer
-  demo/          Base AI Gate demo emitter
+├── audit/
+├── contracts/
+├── core/
+├── data_wall/
+├── evidence/
+├── eval/
+├── model_gateway/
+├── policy/
+├── retrieval/
+├── runtime/
+├── security/
+├── state/
+├── tools/
+├── training/
+└── verifier/
+
 docs/
-  architecture/  plans + component docs
-  adr/           ADR_001..ADR_004
-  algorithms/    algorithm proof documentation
-tests/unit/  tests/integration/
+├── architecture/
+├── algorithms/
+└── adr/
+
+tests/
+├── unit/
+└── integration/
 ```
 
-## Activate the virtualenv (Windows / PowerShell)
+Detailed internal component names, training procedures, architecture decisions, and algorithm notes live under `docs/`.
 
-```powershell
-cd D:\amali\amali-core
-.\.venv\Scripts\Activate.ps1
-```
+---
 
-## Run the tests
+## Quick Start
 
-Install the package in editable mode for local development, then run pytest:
+```bash
+git clone https://github.com/akonPAPA/AMALI.git
+cd AMALI
 
-```powershell
 python -m pip install -e ".[dev]"
 python -m pytest
+python scripts/run_base_ai_gate_demo.py
 ```
 
-For a quick local run without installing, set `PYTHONPATH` so imports resolve
-(the same approach CI uses):
+---
 
-```powershell
-$env:PYTHONPATH = "src"
-python -m pytest
-```
+## Current Scope
 
-`pyproject.toml` also sets `pythonpath = ["src"]` for pytest when you invoke it
-from the repo root after install.
+AMALI is experimental engineering and evaluation software.
 
-`uv.lock` is an optional local dependency lock; CI still uses direct `pip install`
-for Gate A (see `.github/workflows/ci.yml`).
+It is not presented as:
 
-## Scope
+- a foundation model
+- an AGI system
+- an unrestricted autonomous agent
+- a production security platform
+- a replacement for existing frontier models
 
-Local-only. No network calls, no external services, no database server,
-no Docker, no cloud, no frontend. Later Investor Gate Alpha stages
-(policy, routing, RAG, verification, eval) are described in
-[`docs/architecture/investor_gate_alpha_plan.md`](docs/architecture/investor_gate_alpha_plan.md).
+The current priority is to move from architecture claims to reproducible empirical evaluation.
+
+---
+
+## Limitations
+
+Current limitations include:
+
+- no production-readiness claim
+- no frontier-model superiority claim
+- no completed AMALI-FT-v0 benchmark yet
+- no guarantee that evidence metadata eliminates adversarial manipulation
+- no guarantee that policy enforcement prevents every possible tool-abuse strategy
+- local-model performance depends on user hardware and model availability
+
+Security properties must be measured empirically rather than inferred from architecture alone.
+
+---
+
+## Documentation
+
+See `docs/` for:
+
+- architecture decisions
+- component designs
+- algorithm notes
+- model readiness
+- data preparation
+- evaluation
+- training
+- security constraints
+
+---
+
+## License
+
+See `LICENSE` for the project's current license and usage terms.
