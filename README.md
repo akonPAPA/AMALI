@@ -1,5 +1,7 @@
 # AMALI
 
+## If you have some ideas or just want to say that Im dumb, Im welcome to your opinion and advises.
+
 **Evidence-governed runtime and evaluation framework for local LLM and agent systems.**
 
 AMALI explores one core question:
@@ -40,7 +42,12 @@ Policy
 Audited Result
 ```
 
-The goal is not to make a model "more intelligent" by declaration. The goal is to make AI behavior more constrained, inspectable, and measurable.
+The goal is to make AI behavior more constrained, inspectable, and measurable.The AMALI uses recall logic for each question or task.
+
+## Recall logic
+ For example there is a task to debug 50 issues on github, and you give prompt to solve every issue properly. But even Claude Opus 5.0 has context issue where attention of your prompt makes sense to every task that you need to solve. 
+- So AMALI uses recall logic when AMALI solves each issue with new context and new attention on weights and with new decision boundaries for each task. So temperatures for each issue will be different for each task, and it will be more compitable for local models such as DeepSeek V4 Flash.
+- I tested DeepSeek V4 flash with and without AMALI so it shows the higher quality work for DeepSeek-V4-Flash which uses AMALI
 
 ---
 
@@ -50,32 +57,32 @@ The goal is not to make a model "more intelligent" by declaration. The goal is t
 
 Generated statements are represented as typed claims and classified as:
 
-- `KNOWN`
-- `INFERRED`
-- `UNKNOWN`
-- `HYPOTHESIS`
-- `RISK`
+-  ` KNOWN`
+- ` INFERRED`
+- ` UNKNOWN`
+- ` HYPOTHESIS`
+- ` RISK`
 
-A claim cannot become `KNOWN` without supporting evidence.
+A claim cannot become ` KNOWN` without supporting evidence.
 
 ### Explicit uncertainty
 
-The runtime is allowed to return `UNKNOWN` instead of forcing an unsupported answer.
+The runtime is allowed to return  ` UNKNOWN` instead of forcing an unsupported answer.
 
 ### Least-privilege tool execution
 
 Tool requests pass through a typed policy boundary:
 
 ```text
-Agent Request
-    ↓
-Typed Tool Request
-    ↓
-Policy Evaluation
-    ↓
-ALLOW / DENY / REVIEW
-    ↓
-Executor
+1)Agent Request
+    |
+2)Typed Tool Request
+    |
+3)Policy Evaluation
+    |
+4)ALLOW / DENY / REVIEW
+    |
+5)Executor
 ```
 
 The policy model is default-deny.
@@ -103,33 +110,33 @@ This allows the control plane to be tested independently from model quality.
 ```text
                     Task Request
                          │
-                         ▼
+                        \ /
                 ┌─────────────────┐
                 │ Data Admission  │
                 └────────┬────────┘
                          │
-                         ▼
+                        \ /
                 ┌─────────────────┐
                 │ Policy Boundary │
                 └────────┬────────┘
                          │
-                         ▼
+                        \ /
                 ┌─────────────────┐
                 │ Model/Retrieval │
                 └────────┬────────┘
                          │
-                         ▼
+                        \ /
                 ┌─────────────────┐
                 │ Claim Extraction│
                 └────────┬────────┘
                          │
-                         ▼
+                        \ /
                 ┌─────────────────┐
                 │  Verification   │
                 └────────┬────────┘
                          │
                ┌─────────┴─────────┐
-               ▼                   ▼
+              \ /                 \ /
         Audited Result         Evaluation
 ```
 
@@ -137,21 +144,21 @@ This allows the control plane to be tested independently from model quality.
 
 ## What Is Implemented
 
-| Area | Status |
-|---|---|
-| Typed claim model | Implemented |
-| Evidence records | Implemented |
-| Explicit uncertainty states | Implemented |
-| Hash-linked audit ledger | Implemented |
-| Typed tool permission boundary | Implemented |
-| Deterministic local runtime | Implemented |
-| Local-model gateway | Implemented |
-| Evaluation infrastructure | Implemented |
-| Training pipeline scaffolding | Implemented |
-| Fine-tuned AMALI model | Experimental / not validated |
-| Production readiness | Not claimed |
+ Area | Status 
 
----
+Typed claim model | Implemented 
+Evidence records | Implemented 
+Explicit uncertainty states | Implemented 
+Hash-linked audit ledger | Implemented 
+Typed tool permission boundary | Implemented 
+Deterministic local runtime | Implemented 
+Local-model gateway | Implemented 
+Evaluation infrastructure | Implemented 
+Training pipeline scaffolding | Implemented 
+Fine-tuned AMALI model | Experimental / not validated 
+Production readiness | Not claimed 
+
+----
 
 ## Base AI Gate
 
@@ -189,7 +196,7 @@ AMALI also supports an explicit owner-controlled local-model path.
 The currently tested readiness target is:
 
 ```text
-Qwen/Qwen2.5-1.5B-Instruct
+Qwen/Qwen2.5-1.5B-Instruct which was not fine tunned or changed
 ```
 
 Model weights are not bundled with this repository and are never downloaded implicitly.
@@ -346,4 +353,7 @@ See `docs/` for:
 
 ## License
 
-See `LICENSE` for the project's current license and usage terms.
+It is simple MIT license
+
+
+## P.S: I bought new Rtx Pro 5000 month ago, so I think I will end this project maybe in october
